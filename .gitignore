@@ -2,3 +2,9 @@
 !.gitignore
 !LICENSE
 !README.md
+!main.py
+!helpers.py
+!webapp
+!webapp/**
+node_modules
+build
