@@ -43,6 +43,8 @@ Most of the dependencies are self explanatory, the only issue I had was installi
 
 There are number of environment variables and holes you'll need to fill with info about your environment. Instead of fixing things, I left a lot of comments.
 
+The sleep data is written to `sleep_logs.csv`. I primed this file with a few rows as an example. Feel free to remove these and start from scratch.
+
 ### Part 2: The Web App
 
 This one is more straight forward. Just make sure you have [`yarn`](https://yarnpkg.com/getting-started/install).
