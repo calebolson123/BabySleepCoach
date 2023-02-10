@@ -9,3 +9,4 @@
 node_modules
 build
 !sleep_logs.csv
+!*.ipynb
