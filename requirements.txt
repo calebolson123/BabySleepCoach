@@ -1,0 +1,12 @@
+mediapipe==0.9.1.0
+numpy==1.21.5
+pyhatchbabyrest==2.1.0
+pyserial==3.5
+matplotlib==3.7.0
+numpy==1.24.2
+pandas==1.5.3
+pmdarima==2.0.2
+python-dotenv==0.21.1
+scikit_learn==1.2.1
+statsmodels==0.13.5
+tbats==1.1.2

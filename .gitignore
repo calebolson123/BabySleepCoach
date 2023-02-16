@@ -10,3 +10,5 @@ node_modules
 build
 !sleep_logs.csv
 !*.ipynb
+!requirements.txt
+!.env_sample
