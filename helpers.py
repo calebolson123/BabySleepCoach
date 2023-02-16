@@ -3,6 +3,9 @@ import numpy as np
 import cv2
 import os
 from pyhatchbabyrest import PyHatchBabyRest
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def euclidean(point, point1):
     x = point.x
@@ -40,7 +43,7 @@ def closed_ratio(img, debug_img, landmarks, left_eye_indices, right_eye_indices)
 
 def set_hatch(is_awake):
     print("attempting to boost hatch brightness")
-    rest = PyHatchBabyRest(os.environ['HATCH_IP'])
+    rest = PyHatchBabyRest(os.getenv('HATCH_IP'))
     rest.set_brightness(5)
     print("brightness: ", rest.brightness)
 
