@@ -13,7 +13,7 @@ import statistics
 from dotenv import load_dotenv
 # from cast_service import CastSoundService
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from helpers import check_eyes_open, set_hatch, check_mouth_open, maintain_aspect_ratio_resize, gamma_correction
+from .helpers import check_eyes_open, set_hatch, check_mouth_open, maintain_aspect_ratio_resize, gamma_correction
 
 
 class SleepyBaby():
