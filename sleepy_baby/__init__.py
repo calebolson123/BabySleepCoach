@@ -15,24 +15,56 @@ from dotenv import load_dotenv
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from .helpers import check_eyes_open, set_hatch, check_mouth_open, maintain_aspect_ratio_resize, gamma_correction
 
+from .media_analysis import MediaAnalysis
+from .decision_logic import DecisionLogic
+
 
 class SleepyBaby():
 
-    # TODO: break up this class, so big ew
+    def __init__(self, frame_width, frame_height, decision_logic = DecisionLogic, debug=False):
+        self.media = MediaAnalysis(frame_width, frame_height, debug)
+        self.logic = decision_logic()
 
-    # General high level heuristics:
-    # 1) no eyes -> no body found -> baby is awake
-    # 2) no eyes -> body found -> moving -> baby is awake
-    # 3) no eyes -> body found -> not moving -> baby is sleeping
-    # 4) eyes -> eyes open -> baby is awake (disregard body movement)
-    # 5) eyes -> eyes closed -> movement -> baby is awake
-    # 6) eyes -> eyes closed -> no movement -> baby is asleep
-    # 7) eyes -> eyes closed -> mouth open -> baby is awake
+    def set_working_area(self, x_offset, y_offset, width, height):
+        return self.media.set_working_area(x_offset, y_offset, width, height)
+    
+    def process_frame(self, frame):
+        self.media.process_frame(frame)
+        if self.media.analysis['body_detected']
 
-    def __init__(self):
+    
+
+
+
+class old:
+
+    def __init__(self, x, y, width, height, debug=False):
+        """
+        __init__ _summary_
+
+        Parameters
+        ----------
+        x : int, optional
+            offset for crop image on x-axis, by default 700
+        y : int, optional
+            offset for crop image on y-axis, by default 125
+        width : int, optional
+            width of the interesting area, by default 800
+        height : int, optional
+            height of the interesting area, by default 1000
+        debug : bool, optional
+            show verbose log, by default False 
+        """
+        self.debug = debug
+        self.logger = logging.getLogger(SleepyBaby.__name__)
         self.frame_dim = (1920,1080)
         self.next_frame = 0
         self.fps = 30
+        self.x = x
+        self.y = y
+        self.h = height
+        self.w = width
+        self.shape = [height, width]
         self.mpPose = mp.solutions.pose
         self.mpFace = mp.solutions.face_mesh
         self.pose = self.mpPose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7)
@@ -72,281 +104,6 @@ class SleepyBaby():
         ]) 
 
 
-    # Decorator ensures function that can only be called once every `s` seconds.
-    def debounce(s):
-        def decorate(f):
-            t = None
-
-            def wrapped(*args, **kwargs):
-                nonlocal t
-                t_ = time.time()
-                if t is None or t_ - t >= s:
-                    result = f(*args, **kwargs)
-                    t = time.time()
-                    return result
-            return wrapped
-        return decorate
-
-
-    @debounce(1)
-    def throttled_handle_no_eyes_found(self):
-        logging.info('No face found, depreciate queue')
-        print('No face found, depreciate queue')
-        if(len(self.eyes_open_q) > 0):
-            self.eyes_open_q.popleft()
-
-
-    @debounce(1)
-    def throttled_handle_no_body_found(self):
-        logging.info('No body found, vote awake')
-        print('No body found, vote awake')
-        self.awake_q.append(1)
-
-
-    def process_baby_image_models(self, img, debug_img):
-        results = self.face.process(img)
-        results_pose = self.pose.process(img)
-
-        body_found = True
-        if results_pose.pose_landmarks:
-            # 15 left-wrist, 16 right-wrist
-            shape = img.shape
-            left_wrist_coords = (shape[1] * results_pose.pose_landmarks.landmark[15].x, shape[0] * results_pose.pose_landmarks.landmark[15].y)
-            right_wrist_coords = (shape[1] * results_pose.pose_landmarks.landmark[16].x, shape[0] * results_pose.pose_landmarks.landmark[16].y)
-
-            # print('left wrist: ', left_wrist_coords)
-            # print('right wrist: ', right_wrist_coords)
-
-            self.movement_q.append((left_wrist_coords, right_wrist_coords))
-
-            debug_img = cv2.putText(debug_img, "Left wrist", (int(left_wrist_coords[0]), int(left_wrist_coords[1])), 2, 1, (255,0,0), 2, 2)
-            debug_img = cv2.putText(debug_img, "Right wrist", (int(right_wrist_coords[0]), int(right_wrist_coords[1])), 2, 1, (255,0,0), 2, 2)
-
-            if os.getenv("DEBUG", 'False').lower() in ('true', '1'):
-                CUTOFF_THRESHOLD = 10  # head and face
-                MY_CONNECTIONS = frozenset([t for t in self.mpPose.POSE_CONNECTIONS if t[0] > CUTOFF_THRESHOLD and t[1] > CUTOFF_THRESHOLD])
-
-                # if results_pose.pose_landmarks:  # if it finds the points
-                #     for landmark_id, landmark in enumerate(results_pose.pose_landmarks):
-                #         if landmark_id <= CUTOFF_THRESHOLD:
-                #             landmark.visibility = 0
-                #     self.mpDraw.draw_landmarks(debug_img, results_pose.pose_landmarks, MY_CONNECTIONS) 
-
-                for id, lm in enumerate(results_pose.pose_landmarks.landmark):
-                    if id <= CUTOFF_THRESHOLD:
-                        lm.visibility = 0
-                        continue
-                    h, w,c = debug_img.shape
-                    # print(id, lm)
-                    cx, cy = int(lm.x*w), int(lm.y*h)
-                    cv2.circle(debug_img, (cx, cy), 5, (255,0,0), cv2.FILLED)
-
-                self.mpDraw.draw_landmarks(debug_img, results_pose.pose_landmarks, MY_CONNECTIONS, landmark_drawing_spec=self.mpDraw.DrawingSpec(color=(255, 0, 0), thickness=2, circle_radius=2))
-
-                # self.mpDraw.draw_landmarks(debug_img, results_pose.pose_landmarks, MY_CONNECTIONS)
-                # for id, lm in enumerate(results_pose.pose_landmarks.landmark):
-                #     if id < CUTOFF_THRESHOLD:
-                #         continue
-                #     self.mpDraw.draw_landmarks(debug_img, results_pose.pose_landmarks, MY_CONNECTIONS)
-                #     h, w,c = debug_img.shape
-                #     # print(id, lm)
-                #     cx, cy = int(lm.x*w), int(lm.y*h)
-                #     cv2.circle(debug_img, (cx, cy), 5, (255,0,0), cv2.FILLED)
-        else:
-            body_found = False
-            self.throttled_handle_no_body_found()
-
-        LEFT_EYE = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
-        RIGHT_EYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246] 
-
-        if results.multi_face_landmarks:
-            self.multi_face_landmarks = results.multi_face_landmarks
-
-            eyes_are_open = check_eyes_open(results.multi_face_landmarks[0].landmark, img, debug_img, LEFT_EYE, RIGHT_EYE)
-
-            # Additionally check if mouth is closed. If not, consider baby crying. Can rely on queue length to ensure
-            # yawns don't trigger wake
-
-            # If mouth is open, override and just consider it, "eyes open", pushing in direction of "wake vote"
-            if eyes_are_open == 0: # if eyes are closed, then check if mouth is open
-                mouth_is_open = check_mouth_open(results.multi_face_landmarks[0].landmark)
-                if mouth_is_open:
-                    logging.info('Eyes closed, mouth open, crying or yawning, consider awake.')
-                    self.eyes_open_q.append(1)
-                else:
-                    logging.info('Eyes closed, mouth closed, consider sleeping.')
-                    self.eyes_open_q.append(0)
-            else:
-                logging.info('Eyes open, consider awake.')
-                self.eyes_open_q.append(1)
-
-        else: # no face results, interpret this as baby is not in crib, i.e. awake
-            self.throttled_handle_no_eyes_found()
- 
-        return debug_img, body_found
-
-
-    # This is placeholder until improve sensitivity of transitioning between waking and sleeping.
-    # Explanation: Sometimes when baby is waking up, he'll open and close his eyes for a couple of minutes...
-    # TODO: Fine-tune sensitivity of voting, for now, don't allow toggling between wake & sleep within N seconds
-    @debounce(180)
-    def need_to_clean_this_up(self, wake_status, img):
-        str_timestamp = str(int(time.time()))
-        sleep_data_base_path = os.getenv("SLEEP_DATA_PATH")
-        p = sleep_data_base_path + '/' + str_timestamp + '.png'
-        if wake_status: # woke up
-            log_string = "1," + str_timestamp + "\n"
-            print(log_string)
-            logging.info(log_string)
-            with open(sleep_data_base_path + '/sleep_logs.csv', 'a+', encoding="utf-8") as f:
-                f.write(log_string)
-            cv2.imwrite(p, img) # store off image of when wake/sleep event occurred. Can help with debugging issues
-
-            # if daytime, send phone notification if baby woke up
-            # now = datetime.datetime.now()
-            # now_time = now.time()
-            # if now_time >= ti(7,00) or now_time <= ti(22,00): # day time
-            #     Thread(target=telegram_send.send(messages=["Baby woke up."]), daemon=True).start()
-
-            self.is_awake = True
-
-            if os.getenv("OWL", 'False').lower() in ('true', '1'):
-                print("MOVE & MAKE NOISE")
-                logging.info("MOVE & MAKE NOISE")
-                time.sleep(5)
-                self.ser.write(bytes(str(999999) + "\n", "utf-8"))
-                self.cast_service.play_sound()
-        else: # fell asleep
-            log_string = "0," + str_timestamp + "\n"
-            print(log_string)
-            logging.info(log_string)
-            with open(sleep_data_base_path + '/sleep_logs.csv', 'a+', encoding="utf-8") as f:
-                f.write(log_string)
-            cv2.imwrite(p, img)
-            self.is_awake = False
-
-        # now = datetime.datetime.now()
-        # now_time = now.time()
-        # if now_time >= ti(22,00) or now_time <= ti(8,00): # night time
-        #     set_hatch(self.is_awake)
-
-
-    @debounce(10)
-    def set_wakeness_status(self, img):
-        if len(self.awake_q):
-            avg_awake = sum(self.awake_q) / len(self.awake_q)
-            if avg_awake >= 0.6 and self.is_awake == False:
-                self.need_to_clean_this_up(True, img)
-            elif avg_awake < 0.6 and self.is_awake == True:
-                self.need_to_clean_this_up(False, img)
-
-
-    @debounce(1)
-    def awake_voting_logic(self, debug_img):
-        if len(self.eyes_open_q) > len(self.eyes_open_q)/2: # dont vote on eyes unless queue is half full
-            avg = sum(self.eyes_open_q) / len(self.eyes_open_q)
-            if avg > 0.75: # eyes open
-                self.eyes_open_state = True
-                print("Eyes open: vote awake")
-                logging.info("\nvote awake")
-                self.awake_q.append(1)
-            else: # closed
-                self.eyes_open_state = False
-                self.awake_q.append(0)
-                print("Eyes closed: vote sleeping")
-                logging.info("\nvote sleeping")
-        else:
-            print("Not voting on eyes, eye queue too short.")
-
-
-    @debounce(1)
-    def movement_voting_logic(self, debug_img, body_found):
-        if not body_found:
-            print('No body found, depreciate movement queue.')
-            if len(self.movement_q):
-                self.movement_q.popleft()
-
-        elif len(self.movement_q) > 5:
-            left_wrist_list = [c[0] for c in self.movement_q]
-            left_wrist_x_list = [c[0] for c in left_wrist_list]
-            left_wrist_y_list = [c[1] for c in left_wrist_list]
-
-            right_wrist_list = [c[1] for c in self.movement_q]
-            right_wrist_x_list = [c[0] for c in right_wrist_list]
-            right_wrist_y_list = [c[1] for c in right_wrist_list]
-
-            std_left_wrist_x = statistics.pstdev(left_wrist_x_list) - 1
-            std_left_wrist_y = statistics.pstdev(left_wrist_y_list) - 1
-
-            std_right_wrist_x = statistics.pstdev(right_wrist_x_list) - 1
-            std_right_wrist_y = statistics.pstdev(right_wrist_y_list) - 1
-
-            # average it all together and compare to movement threshold to determine if moving
-            avg_std = (((std_left_wrist_x + std_left_wrist_y)/2) + ((std_right_wrist_x + std_right_wrist_y)/2))/2
-            # print('movement left: ', (std_left_wrist_x + std_left_wrist_y)/2)
-            # print('movement right: ', (std_right_wrist_x + std_right_wrist_y)/2)
-            # print('movement value: ', avg_std)
-            if int(avg_std) < 25:
-                print("No movement, vote sleeping")
-                logging.info('No movement, vote sleeping')
-                self.awake_q.append(0)
-            else:
-                print("Movement, vote awake")
-                logging.info("Movement, vote awake")
-                self.awake_q.append(1)
-
-
-    # every N seconds, check if baby is awake & do stuff
-    @debounce(5)
-    def periodic_wakeness_check(self):
-        print('\n', 'Is baby awake:', self.is_awake, '\n')
-        logging.info('Is baby awake: {}'.format(str(self.is_awake)))
-
-
-    def frame_logic(self, raw_img):
-        img = raw_img
-
-        debug_img = img.copy()
-        img.flags.writeable = False
-        converted_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        # beef
-        res = self.process_baby_image_models(converted_img, debug_img)
-        debug_img = res[0]
-        body_found = res[1]
-
-        self.awake_voting_logic(debug_img)
-        self.movement_voting_logic(debug_img, body_found)
-        self.set_wakeness_status(debug_img)
-        self.periodic_wakeness_check()
-
-        if os.getenv("DEBUG", 'False').lower() in ('true', '1'):
-            avg_awake = sum(self.awake_q) / len(self.awake_q)
-            
-            # draw progress bar
-            bar_y_offset = 0
-            bar_y_offset = 100
-
-            bar_width = 200
-            w = img.shape[1]
-            start_point = (int(w/2 - bar_width/2), 350 + bar_y_offset)
-
-            end_point = (int(w/2 + bar_width/2), 370 + bar_y_offset)
-            adj_avg_awake = 1.0 if avg_awake / .6 >= 1.0 else avg_awake / .6
-            progress_end_point = (int(w/2 - bar_width/2 + (bar_width*(adj_avg_awake))), 370 + bar_y_offset)
-
-            color = (255, 255, 117)
-            progress_color = (0, 0, 255)
-            thickness = -1
-
-            debug_img = cv2.rectangle(debug_img, start_point, end_point, color, thickness)
-            debug_img = cv2.rectangle(debug_img, start_point, progress_end_point, progress_color, thickness)
-            display_perc = int((avg_awake * 100) / 0.6)
-            display_perc = 100 if display_perc >= 100 else display_perc
-            debug_img = cv2.putText(debug_img, str(display_perc) + "%", (int(w/2 - bar_width/2), 330 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
-            debug_img = cv2.putText(debug_img, "Awake", (int(w/2 - bar_width/2 + 85), 330 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
-
-        return debug_img
 
 
     # This basically does the same thing as the live version, but is very useful for testing
@@ -437,6 +194,68 @@ class SleepyBaby():
                             except Exception as e:
                                 print("Something went wrong: ", e)
 
+   
+
+    def add_progress_bar_to_image(self, frame, percent): #TODO: move to class that manage decisions
+        # draw progress bar
+        bar_y_offset = 100
+        bar_width = 200
+        w = frame.shape[1]
+        start_point = (int(w/2 - bar_width/2), 350 + bar_y_offset)
+        end_point = (int(w/2 + bar_width/2), 370 + bar_y_offset)
+        adj_percent = 1.0 if percent / .6 >= 1.0 else percent / .6
+        progress_end_point = (int(w/2 - bar_width/2 + (bar_width*(adj_percent))), 370 + bar_y_offset)
+        color = (255, 255, 117)
+        progress_color = (0, 0, 255)
+        thickness = -1
+        frame = cv2.rectangle(frame, start_point, end_point, color, thickness)
+        frame = cv2.rectangle(frame, start_point, progress_end_point, progress_color, thickness)
+        display_perc = int((percent * 100) / 0.6)
+        display_perc = 100 if display_perc >= 100 else display_perc
+        frame = cv2.putText(frame, str(display_perc) + "%", (int(w/2 - bar_width/2), 330 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
+        frame = cv2.putText(frame, "Awake", (int(w/2 - bar_width/2 + 85), 330 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
+        return frame
+
+
+
+    def process_image(self, frame):
+        """
+        This function will process image. 
+        
+        By default, only a interesting area defined by (x,y,h,w) is considered in processing.
+        This avoids to waste resources to look for a baby outside crib
+
+        Parameters
+        ----------
+        img : numpy.ndarray
+            frame to be processed
+
+        Returns
+        -------
+        numpy.ndarray
+            image with overlays
+        """
+
+        #resize image if needed #FIXME: not working
+        #if frame.shape[0] > self.frame_dim[0] and frame.shape[1] > self.frame_dim[1]: # max res 1080p
+        #    frame = maintain_aspect_ratio_resize(frame, width=self.frame_dim[0], height=self.frame_dim[1])
+
+        frame.flags.writeable = False #make the original frame read-only
+        self.frame = frame
+        working_area = cv2.cvtColor(frame[self.y:self.y+self.h, self.x:self.x+self.w], cv2.COLOR_BGR2RGB) #crop image and create a new image for processing
+        
+        analysis = self.process_baby_image_models(working_area)
+        debug = frame.copy()
+        debug = self.add_body_details_to_image(debug, analysis)
+        debug = self.add_progress_bar_to_image(debug, 0.5)
+        debug = self.add_face_details_to_image(debug, analysis)
+        return debug
+        
+        #self.awake_voting_logic(debug_img)
+        #self.movement_voting_logic(debug_img, body_found)
+        #self.set_wakeness_status(debug_img)
+        #self.periodic_wakeness_check()
+
 
     def live(self, consumer_q):
         img = None
@@ -448,57 +267,9 @@ class SleepyBaby():
                     print('No images in queue: ', e)
                     continue
 
-                # bounds to actual run models/analysis on...no need to look for babies outside of the crib
-                x = 700
-                y = 125
-                h = 1000
-                w = 800
+                img = self.process_image(img)
+                cv2.imshow('baby', maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1]))
 
-                if img.shape[0] > 1080 and img.shape[1] > 1920: # max res 1080p
-                    img = maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1])
-
-                img_to_process = img[y:y+h, x:x+w]
-
-                debug_img = self.frame_logic(img_to_process)
-
-                # reapply cropped and modified/marked up img back to img which is displayed
-                img[y:y+h, x:x+w] = debug_img
-                 
-                if os.getenv("DEBUG", 'False').lower() in ('true', '1'):
-                    try:
-                        cv2.rectangle(img=img, pt1=(x, y), pt2=(x+w, y+h), color=[153,50,204], thickness=2)
-                        tmp = img[y:y+h, x:x+w]
-                        img = gamma_correction(img, .4)
-
-                        for face_landmarks in self.multi_face_landmarks:
-
-                                # INDICIES: https://github.com/tensorflow/tfjs-models/blob/838611c02f51159afdd77469ce67f0e26b7bbb23/face-landmarks-detection/src/mediapipe-facemesh/keypoints.ts
-                                # https://github.com/google/mediapipe/blob/master/mediapipe/python/solutions/face_mesh_connections.py
-
-                                self.mpDraw.draw_landmarks(
-                                    image=tmp,
-                                    landmark_list=face_landmarks,
-                                    connections=self.mpFace.FACEMESH_RIGHT_EYE,
-                                    landmark_drawing_spec=None,
-                                    connection_drawing_spec=self.mpDraw.DrawingSpec(color=(255, 150, 255), thickness=1, circle_radius=1))
-                                    # connection_drawing_spec=self.mpDrawStyles
-                                    # .get_default_face_mesh_contours_style())
-
-                                self.mpDraw.draw_landmarks(
-                                    image=tmp,
-                                    landmark_list=face_landmarks,
-                                    connections=self.mpFace.FACEMESH_LEFT_EYE,
-                                    landmark_drawing_spec=None,
-                                    connection_drawing_spec=self.mpDraw.DrawingSpec(color=(255, 255, 0), thickness=1, circle_radius=1))
-                                    # connection_drawing_spec=self.mpDrawStyles
-                                    # .get_default_face_mesh_contours_style())
-
-                        img[y:y+h, x:x+w] = tmp
-
-                        img = cv2.resize(img, (960, 540))
-                        cv2.imshow('baby', maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1]))
-
-                        if cv2.waitKey(1) & 0xFF == ord('q'):
-                            break
-                    except Exception as e:
-                        print("Something went wrong: ", e)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                
