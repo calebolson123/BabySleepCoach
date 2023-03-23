@@ -5,9 +5,6 @@ import logging
 
 from .helpers import check_eyes_open, check_mouth_open
 
-LEFT_EYE = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
-RIGHT_EYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
-
 class MediaAnalysis:
 
     def __init__(self, frame_width, frame_height, debug=False):
@@ -16,7 +13,6 @@ class MediaAnalysis:
 
         Parameters
         ----------
-        
         debug : bool, optional
             show verbose log, by default False 
         """
@@ -89,9 +85,8 @@ class MediaAnalysis:
             results = self.face.process(img)
             if results.multi_face_landmarks:
                 self.multi_face_landmarks = results.multi_face_landmarks
-                debug_img = img.copy() #FIXME: remove dependency in check_eyes_open
                 analysis["face_detected"] = True
-                analysis["eyes_open"] = check_eyes_open(results.multi_face_landmarks[0].landmark, img, debug_img, LEFT_EYE, RIGHT_EYE)
+                analysis["eyes_open"] = check_eyes_open(results.multi_face_landmarks[0].landmark)
                 analysis["mouth_open"] = check_mouth_open(results.multi_face_landmarks[0].landmark)   
         else:
             self.pose_landmark = None
@@ -142,7 +137,7 @@ class MediaAnalysis:
             image with some draws overlayed
         """
         if analysis['face_detected']:
-            self.logger.info(f"Face Detected. Eyes are {'open' if analysis['eyes_open'] else 'close'} and month is {'open' if analysis['mouth_open'] else 'close'}")
+            self.logger.info(f"Face Detected. Eyes are {'open' if analysis['eyes_open'] else 'close'} and mouth is {'open' if analysis['mouth_open'] else 'close'}")
             w_area = frame[self.y:self.y+self.h, self.x:self.x+self.w]
             for face_landmarks in self.multi_face_landmarks:
                 # INDICIES: https://github.com/tensorflow/tfjs-models/blob/838611c02f51159afdd77469ce67f0e26b7bbb23/face-landmarks-detection/src/mediapipe-facemesh/keypoints.ts
