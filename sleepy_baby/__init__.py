@@ -9,84 +9,148 @@ import _thread
 import logging
 import serial
 import queue
-import statistics
-from dotenv import load_dotenv
-# from cast_service import CastSoundService
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-from .helpers import check_eyes_open, set_hatch, check_mouth_open, maintain_aspect_ratio_resize, gamma_correction
 
-from .media_analysis import MediaAnalysis
+from .frame import Frame
+from .helpers import check_eyes_open, check_mouth_open
 from .decision_logic import DecisionLogic
 
 
-class SleepyBaby():
 
-    def __init__(self, frame_width, frame_height, decision_logic = DecisionLogic, debug=False):
-        self.media = MediaAnalysis(frame_width, frame_height, debug)
-        self.logic = decision_logic()
 
-    def set_working_area(self, x_offset, y_offset, width, height):
-        return self.media.set_working_area(x_offset, y_offset, width, height)
-    
-    def process_frame(self, frame):
-        self.media.process_frame(frame)
-        if self.media.analysis['body_detected']
+class SleepyBaby:
+    """
+     It analyzes frame provided on process_frame.
 
-    
+     Results are saved inside the object variable "analysis".
+     It will be used later for decision logic to make the proper evaluation.
+    """
 
+    def __init__(self,
+                 body_min_detection_confidence=0.8,
+                 body_min_tracking_confidence=0.8,
+                 face_min_detection_confidence=0.7,
+                 face_min_tracking_confidence=0.7):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.debug("SleepyBaby is starting")
+        self.processed_frame = None #It is used to produce post-processed video
+        self.process_t = None #Process Thread
+        self.face = mp.solutions.face_mesh.FaceMesh(max_num_faces=1,
+                                                    refine_landmarks=True,
+                                                    min_detection_confidence=body_min_detection_confidence,
+                                                    min_tracking_confidence=body_min_tracking_confidence)
+        self.pose = mp.solutions.pose.Pose(min_detection_confidence=face_min_detection_confidence,
+                                           min_tracking_confidence=face_min_tracking_confidence)
+        self.set_working_area() #Set entire area as working area
+        self.set_output() #Set default values
+
+        #self.logic = decision_logic()
+        self.logger.info("SleepyBaby is configured")
+
+    def set_output(self, 
+                   show_frame=True, 
+                   show_wrist_position=True, 
+                   show_wrist_text=True, 
+                   show_body_details=True, 
+                   show_face_details=True,
+                   show_progress_bar=True):
+        self.show_frame = show_frame
+        self.show_wrist_position = show_wrist_position
+        self.show_wrist_text = show_wrist_text
+        self.show_body_details = show_body_details
+        self.show_face_details = show_face_details
+        self.show_progress_bar = show_progress_bar
+
+    def start_thread(self, frame_q, stop_event, pause=0.1, ):
+        def loop(self, frame_q, stop_event, pause):
+            while stop_event.is_set() is False:
+                if len(frame_q)>0:
+                    frame = self.processFrame(frame_q.pop(), return_image = self.processed_frame is None)
+                    if frame is not None: 
+                        self.processed_frame = frame
+                time.sleep(pause)
+        self.process_t = Thread(target=loop, args=(self, frame_q, stop_event, pause))
+        self.process_t.start()
+
+
+
+    def set_working_area(self, x_offset=0, y_offset=0, width=None, height=None):
+        self.x_offset = x_offset
+        self.y_offset = y_offset
+        self.width = width
+        self.height = height
+        self.working_area_inited = True
+
+    def processFrame(self, image, return_image=True):
+        frame = Frame(image, self.x_offset, self.y_offset, self.width, self.height)
+        analysis, pose, face = self.process_baby_image_models(frame.w_data)
+        if return_image:
+            if self.show_frame:
+                frame.add_analysis_frame()
+            if self.show_wrist_position or self.show_wrist_text:
+                frame.add_wrist_position(pose, self.show_wrist_text)
+            if self.show_body_details:
+                frame.add_body_details(pose)
+            if self.show_face_details:
+                frame.add_face_details(face)
+            if self.show_progress_bar:
+                frame.add_progress_bar(0.45) #TODO: get this value from decision object
+            return frame.getAugmentedFrame()
+
+    def process_baby_image_models(self, frame):
+        """
+        process_baby_image_models analyze frame and get information.
+
+        Results are stored in analysis variable inside object
+
+        Parameters
+        ----------
+        frame : sleepy_baby.frame.Frame
+            Get Frame object
+
+        Returns
+        -------
+        _type_
+            Returns dict with all findings and the objects for pose and face.
+        """
+        
+        analysis = {
+            "body_detected": False,
+            "left_wrist_coords": None,
+            "right_wrist_coords": None,
+            "face_detected": False,
+            "eyes_open": False,
+            "mouth_open": False
+        }
+        results = None
+        results_pose = self.pose.process(frame)
+        if results_pose.pose_landmarks:
+            analysis["body_detected"] = True
+            # 15 left-wrist, 16 right-wrist
+            analysis["left_wrist_coords"] = (frame.shape[1] * results_pose.pose_landmarks.landmark[15].x, frame.shape[0] * results_pose.pose_landmarks.landmark[15].y)
+            analysis["right_wrist_coords"] = (frame.shape[1] * results_pose.pose_landmarks.landmark[16].x, frame.shape[0] * results_pose.pose_landmarks.landmark[16].y)
+
+            results = self.face.process(frame)
+            if results.multi_face_landmarks:
+                analysis["face_detected"] = True
+                analysis["eyes_open"] = check_eyes_open(results.multi_face_landmarks[0].landmark)
+                analysis["mouth_open"] = check_mouth_open(results.multi_face_landmarks[0].landmark)   
+        else:
+            analysis["body_found"] = False
+        return analysis, results_pose.pose_landmarks, results.multi_face_landmarks if results is not None else None
 
 
 class old:
 
     def __init__(self, x, y, width, height, debug=False):
-        """
-        __init__ _summary_
 
-        Parameters
-        ----------
-        x : int, optional
-            offset for crop image on x-axis, by default 700
-        y : int, optional
-            offset for crop image on y-axis, by default 125
-        width : int, optional
-            width of the interesting area, by default 800
-        height : int, optional
-            height of the interesting area, by default 1000
-        debug : bool, optional
-            show verbose log, by default False 
-        """
-        self.debug = debug
-        self.logger = logging.getLogger(SleepyBaby.__name__)
-        self.frame_dim = (1920,1080)
-        self.next_frame = 0
-        self.fps = 30
-        self.x = x
-        self.y = y
-        self.h = height
-        self.w = width
-        self.shape = [height, width]
-        self.mpPose = mp.solutions.pose
-        self.mpFace = mp.solutions.face_mesh
-        self.pose = self.mpPose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7)
-        # TODO: try turning off refine_landmarks for performance, might not be needed
-        self.face = self.mpFace.FaceMesh(max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.8, min_tracking_confidence=0.8)
-        self.mpDraw = mp.solutions.drawing_utils
-        self.mpDrawStyles = mp.solutions.drawing_styles
 
         self.eyes_open_q = deque(maxlen=30)
         self.awake_q = deque(maxlen=40)
         self.movement_q = deque(maxlen=40)
         self.eyes_open_state = False
 
-        self.multi_face_landmarks = []
         self.is_awake = False
         self.ser = None # serial connection to arduino for controlling demon owl
-
-        # If demon owl mode, setup connection to arduino and cast service for playing audio
-        if os.getenv("OWL", 'False').lower() in ('true', '1'):
-            print("\nCAWWWWWW\n")
-            self.cast_service = CastSoundService()
-            self.ser = serial.Serial('/dev/ttyACM0', 9600, timeout=0)
 
         self.top_lip = frozenset([
             (324, 308), (78, 191), (191, 80), (80, 81), (81, 82),
@@ -196,25 +260,7 @@ class old:
 
    
 
-    def add_progress_bar_to_image(self, frame, percent): #TODO: move to class that manage decisions
-        # draw progress bar
-        bar_y_offset = 100
-        bar_width = 200
-        w = frame.shape[1]
-        start_point = (int(w/2 - bar_width/2), 350 + bar_y_offset)
-        end_point = (int(w/2 + bar_width/2), 370 + bar_y_offset)
-        adj_percent = 1.0 if percent / .6 >= 1.0 else percent / .6
-        progress_end_point = (int(w/2 - bar_width/2 + (bar_width*(adj_percent))), 370 + bar_y_offset)
-        color = (255, 255, 117)
-        progress_color = (0, 0, 255)
-        thickness = -1
-        frame = cv2.rectangle(frame, start_point, end_point, color, thickness)
-        frame = cv2.rectangle(frame, start_point, progress_end_point, progress_color, thickness)
-        display_perc = int((percent * 100) / 0.6)
-        display_perc = 100 if display_perc >= 100 else display_perc
-        frame = cv2.putText(frame, str(display_perc) + "%", (int(w/2 - bar_width/2), 330 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
-        frame = cv2.putText(frame, "Awake", (int(w/2 - bar_width/2 + 85), 330 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
-        return frame
+    
 
 
 
