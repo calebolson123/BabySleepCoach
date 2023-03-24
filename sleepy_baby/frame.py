@@ -50,7 +50,7 @@ class Frame:
         np.ndarray
             Working area
         """
-        return self.frame[self.y_offset:self.y_offset+self.height, self.x_offset:self.x_offset+self.width]
+        return self.frame[self.y_offset:self.y_offset+self.height, self.x_offset:self.x_offset+self.width].copy()
     
     def getAugmentedFrame(self) -> np.ndarray:
         """
@@ -61,7 +61,7 @@ class Frame:
         np.ndarray
             Image integrated
         """
-        frame = self.frame * 0.7
+        frame = self.frame.copy()
         frame[self.y_offset:self.y_offset+self.height, self.x_offset:self.x_offset+self.width] = self.w_data
         return frame
     
@@ -85,17 +85,20 @@ class Frame:
                                                                                 thickness=3,
                                                                                 circle_radius=2)
                                     )
-            self.w_data = cv2.putText(self.w_data, "Left wrist", 
-                                 (int(self.width * pose_landmarks.landmark[15].x),
-                                  int(self.height * pose_landmarks.landmark[15].y)),
-                                 2, 1, (255,0,0), 2, 2)
-            self.w_data = cv2.putText(self.w_data, "Right wrist", 
-                                 (int(self.width * pose_landmarks.landmark[16].x),
-                                  int(self.height * pose_landmarks.landmark[16].y)),
-                                  2, 1, (255,0,0), 2, 2)
         else:
             self.logger.debug("No body detected in frame")
     
+    def add_wrist_position(self, pose_landmarks, show_text=True):
+        if pose_landmarks:
+            left_wrist = (int(self.width * pose_landmarks.landmark[15].x), int(self.height * pose_landmarks.landmark[15].y))
+            right_wrist = (int(self.width * pose_landmarks.landmark[16].x), int(self.height * pose_landmarks.landmark[16].y))
+
+            cv2.circle(self.w_data, left_wrist, radius=5, color=(255,255,0), thickness=-1)
+            cv2.circle(self.w_data, right_wrist, radius=5, color=(255,255,0), thickness=-1)
+            if show_text:
+                self.w_data = cv2.putText(self.w_data, "Left wrist", left_wrist, 2, 1, (255,0,0), 2, 2)
+                self.w_data = cv2.putText(self.w_data, "Right wrist", right_wrist, 2, 1, (255,0,0), 2, 2)
+
     def add_analysis_frame(self):
         self.logger.debug("Draw the analysis frame")
         self.w_data = cv2.rectangle(self.w_data, [0,0], (self.w_data.shape[1], self.w_data.shape[0]), color=(0,255,0), thickness=5)
@@ -137,3 +140,24 @@ class Frame:
                     connection_drawing_spec=mp_utils.DrawingSpec(color=(255, 255, 0), thickness=5, circle_radius=1))
         else:
             self.logger.debug("No face found")
+
+    def add_progress_bar(self, percent): 
+        # draw progress bar
+        bar_y_offset = self.height - 100
+        bar_width = 500
+        w = self.width
+        start_point = (int(w/2 - bar_width/2), bar_y_offset)
+        end_point = (int(w/2 + bar_width/2), bar_y_offset + 20)
+        adj_percent = 1.0 if percent / .6 >= 1.0 else percent / .6
+        
+        progress_end_point = (int(w/2 - bar_width/2 + (bar_width*(adj_percent))), 20 + bar_y_offset)
+        color = (255, 255, 117)
+        progress_color = (0, 0, 255)
+        thickness = -1
+
+        self.w_data = cv2.rectangle(self.w_data, start_point, end_point, color, thickness)
+        self.w_data = cv2.rectangle(self.w_data, start_point, progress_end_point, progress_color, thickness)
+        display_perc = int((percent * 100) / 0.6)
+        display_perc = 100 if display_perc >= 100 else display_perc
+        self.w_data = cv2.putText(self.w_data, str(display_perc) + "%", (int(w/2 - bar_width/2), 10 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
+        self.w_data = cv2.putText(self.w_data, "Awake", (int(w/2 - bar_width/2 + 85), 10 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
