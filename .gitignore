@@ -4,3 +4,9 @@ build
 *.log
 .env
 .ipynb_checkpoints
+baby
+*.jpg
+*.jpeg
+*.png
+*.avi
+*.mp4

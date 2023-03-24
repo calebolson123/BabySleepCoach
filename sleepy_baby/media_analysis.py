@@ -12,19 +12,23 @@ class MediaAnalysis:
      It will be used later for decision logic to make the proper evaluation.
     """
 
-    def __init__(self): 
+    def __init__(self,
+                 body_min_detection_confidence=0.8,
+                 body_min_tracking_confidence=0.8,
+                 face_min_detection_confidence=0.7,
+                 face_min_tracking_confidence=0-7): 
         """__init__ Initialize Analyzer."""
         self.logger = logging.getLogger(self.__class__.__qualname__) 
         # TODO: try turning off refine_landmarks for performance, might not be needed
         self.face = mp.solutions.face_mesh.FaceMesh(max_num_faces=1,
                                                     refine_landmarks=True,
-                                                    min_detection_confidence=0.8,
-                                                    min_tracking_confidence=0.8)
-        self.pose = mp.solutions.pose.Pose(min_detection_confidence=0.7,
-                                           min_tracking_confidence=0.7)
+                                                    min_detection_confidence=body_min_detection_confidence,
+                                                    min_tracking_confidence=body_min_tracking_confidence)
+        self.pose = mp.solutions.pose.Pose(min_detection_confidence=face_min_detection_confidence,
+                                           min_tracking_confidence=face_min_tracking_confidence)
 
 
-    def process_baby_image_models(self, frame:sleepy_baby.frame.Frame):
+    def process_baby_image_models(self, frame):
         """
         process_baby_image_models analyze frame and get information.
 
@@ -49,6 +53,7 @@ class MediaAnalysis:
             "eyes_open": False,
             "mouth_open": False
         }
+        results = None
         results_pose = self.pose.process(frame)
         if results_pose.pose_landmarks:
             analysis["body_detected"] = True
@@ -63,4 +68,4 @@ class MediaAnalysis:
                 analysis["mouth_open"] = check_mouth_open(results.multi_face_landmarks[0].landmark)   
         else:
             analysis["body_found"] = False
-        return analysis, results_pose.pose_landmarks, results.multi_face_landmarks
+        return analysis, results_pose.pose_landmarks, results.multi_face_landmarks if results is not None else None

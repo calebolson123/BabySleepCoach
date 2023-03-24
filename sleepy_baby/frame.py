@@ -61,7 +61,7 @@ class Frame:
         np.ndarray
             Image integrated
         """
-        frame = self.frame.copy()
+        frame = self.frame * 0.7
         frame[self.y_offset:self.y_offset+self.height, self.x_offset:self.x_offset+self.width] = self.w_data
         return frame
     
@@ -82,7 +82,7 @@ class Frame:
                                                                                 thickness=10,
                                                                                 circle_radius=2),
                                     connection_drawing_spec=mp_utils.DrawingSpec(color=(0, 0, 255),
-                                                                                thickness=5,
+                                                                                thickness=3,
                                                                                 circle_radius=2)
                                     )
             self.w_data = cv2.putText(self.w_data, "Left wrist", 
