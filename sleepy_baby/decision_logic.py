@@ -27,66 +27,82 @@ class DecisionLogic:
         self.eyes_open_state = False
         self.is_awake = False
         self.body_found = False
+        self.eyes_found = False
+        self.avg_awake = 0
 
-    def update(self, analysis:dict, eyes_threshold:float=0.75, wrist_threshold:int=25) -> None: #every second
+
+    def push(self, analysis):
         self.body_found = analysis['body_detected']
-        if self.body_found: 
+        self.eyes_found = analysis['face_detected']
+        if self.body_found:
             self.movement_q.append((analysis['left_wrist_coords'], analysis['right_wrist_coords']))
-            
-            if (movement_list_len := len(self.movement_q)) > 5:
-                positions = np.reshape(self.movement_q, (movement_list_len, 4)).T
-                st_dev = [statistics.pstdev(pos) for pos in positions]
-                avg_std = sum(st_dev)/4
-                
-                if int(avg_std) < wrist_threshold:
-                    self.logger.info('No movement, vote sleeping')
-                    self.awake_q.append(0)
-                else:
-                    print("Movement, vote awake")
-                    self.logger.info("Movement, vote awake")
-                    self.awake_q.append(1)
-            if analysis['face_detected']:
+            if self.eyes_found:
                 if analysis['eyes_open'] is False:
-                    if analysis['mouth_open']:
-                        self.logger.info('Eyes closed, mouth open, crying or yawning, consider awake.')
-                        self.eyes_open_q.append(1)
-                    else:
-                        self.logger.info('Eyes closed, mouth closed, consider sleeping.')
-                        self.eyes_open_q.append(0)
+                    self.eyes_open_q.append(1 if analysis['mouth_open'] else 0)
                 else:
-                    self.logger.info('Eyes open, consider awake.')
                     self.eyes_open_q.append(1)
-            else:
-                self.logger.info('No face found, depreciate queue')
-                if len(self.eyes_open_q) > 0:
-                    self.eyes_open_q.popleft()
-        else:
-            self.logger.info('No body found, vote awake')
+            #no_eyes_found
+        #no_body_found
+        
+
+    def update(self, eyes_threshold:float=0.75, wrist_threshold:int=25) -> None: #every second
+        
+        if self.body_found is False: #throttled_handle_no_body_found
             self.awake_q.append(1)
-            if len(self.movement_q):
-                self.movement_q.popleft()
-        #Evaluate eyes
-        if len(self.eyes_open_q)>(self.eyes_open_q.maxlen/2):
-            eyes_score = sum(self.eyes_open_q) / len(self.eyes_open_q)
-            self.eyes_open_state = eyes_score > eyes_threshold
-            self.logger.info("Vote {'awake' if self.eyes_open_state else 'sleep'}")
-            self.awake_q.append(1 if self.eyes_open_state else 0)
+        if (self.eyes_found is False) and (len(self.eyes_open_q)>0): #throttled_handle_no_eyes_found
+            self.eyes_open_q.popleft()
+
+        #self.awake_voting_logic()
+        if len(self.eyes_open_q) > self.eyes_open_q.maxlen/2:
+            avg = sum(self.eyes_open_q) / len(self.eyes_open_q)
+            if avg > 0.75: #eyes_open
+                self.eyes_open_state = True
+                self.logger.info("Eyes Open: vote awake")
+                self.awake_q.append(1)
+            else:
+                self.eyes_open_state = False
+                self.awake_q.append(0)
+                self.logger.info("Eyes closed: vote sleeping")
         else:
-            self.logger.info("Not voting on eyes, eye queue too short.")
+            self.logger.debug("Not voting on eyes, eye que is too short.")
+        
+        #self.movement_voting_logic(body_found)
+        if self.body_found is False:
+            self.logger.debug("No body found, depreciate movement queue.")
+            if len(self.movement_q)>0:
+                self.movement_q.popleft()
+        elif (movement_list_len := len(self.movement_q)) > 5:
+            positions = np.reshape(self.movement_q, (movement_list_len, 4)).T
+            st_dev = [statistics.pstdev(pos) for pos in positions]
+            avg_std = sum(st_dev)/4
+            
+            if int(avg_std) < wrist_threshold:
+                self.logger.info('No movement, vote sleeping')
+                self.awake_q.append(0)
+            else:
+                print("Movement, vote awake")
+                self.logger.info("Movement, vote awake")
+                self.awake_q.append(1)
 
+        #self.set_wakeness_status()
+        if len(self.awake_q)>0:
+            self.avg_awake = sum(self.awake_q) / len(self.awake_q)
+            if self.avg_awake >= 0.6 and self.is_awake == False:
+                self.logger.info("Awake Event")
+                self.is_awake = True
+                #self.need_to_clean_this_up(True) #TODO
+            elif self.avg_awake <0.6 and self.is_awake == True:
+                self.logger.info("Sleep Event")
+                self.is_awake = False
+                #self.need_to_clean_this_up(True) #TODO
 
-    def set_wakeness_status(self, img): #each 10s
-        if len(self.awake_q):
-            avg_awake = sum(self.awake_q) / len(self.awake_q)
-            if avg_awake >= 0.6 and self.is_awake == False:
-                self.need_to_clean_this_up(True, img)
-            elif avg_awake < 0.6 and self.is_awake == True:
-                self.need_to_clean_this_up(False, img)
-    
+        #self.periodic_wakeness_check()
+        
+       
     # This is placeholder until improve sensitivity of transitioning between waking and sleeping.
     # Explanation: Sometimes when baby is waking up, he'll open and close his eyes for a couple of minutes...
     # TODO: Fine-tune sensitivity of voting, for now, don't allow toggling between wake & sleep within N seconds
-    @debounce(180)
+    #@debounce(180)
     def need_to_clean_this_up(self, wake_status, img):
         str_timestamp = str(int(time.time()))
         sleep_data_base_path = os.getenv("SLEEP_DATA_PATH")

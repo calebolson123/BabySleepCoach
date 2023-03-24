@@ -42,8 +42,7 @@ class SleepyBaby:
                                            min_tracking_confidence=face_min_tracking_confidence)
         self.set_working_area() #Set entire area as working area
         self.set_output() #Set default values
-
-        #self.logic = decision_logic()
+        self.logic = DecisionLogic()
         self.logger.info("SleepyBaby is configured")
 
     def set_output(self, 
@@ -61,15 +60,21 @@ class SleepyBaby:
         self.show_progress_bar = show_progress_bar
 
     def start_thread(self, frame_q, stop_event, pause=0.1, ):
-        def loop(self, frame_q, stop_event, pause):
+        def process_loop(self, frame_q, stop_event, pause):
             while stop_event.is_set() is False:
                 if len(frame_q)>0:
                     frame = self.processFrame(frame_q.pop(), return_image = self.processed_frame is None)
                     if frame is not None: 
                         self.processed_frame = frame
                 time.sleep(pause)
-        self.process_t = Thread(target=loop, args=(self, frame_q, stop_event, pause))
+        def evaluate_loop(logic, stop_event, pause=1):
+            while stop_event.is_set() is False:
+                logic.update()
+                time.sleep(pause)
+        self.process_t = Thread(target=process_loop, args=(self, frame_q, stop_event, pause))
         self.process_t.start()
+        self.evaluate_t = Thread(target=evaluate_loop, args=(self.logic, stop_event))
+        self.evaluate_t.start()
 
 
 
@@ -83,6 +88,7 @@ class SleepyBaby:
     def processFrame(self, image, return_image=True):
         frame = Frame(image, self.x_offset, self.y_offset, self.width, self.height)
         analysis, pose, face = self.process_baby_image_models(frame.w_data)
+        self.logic.push(analysis)
         if return_image:
             if self.show_frame:
                 frame.add_analysis_frame()
@@ -93,7 +99,7 @@ class SleepyBaby:
             if self.show_face_details:
                 frame.add_face_details(face)
             if self.show_progress_bar:
-                frame.add_progress_bar(0.45) #TODO: get this value from decision object
+                frame.add_progress_bar(self.logic.avg_awake)
             return frame.getAugmentedFrame()
 
     def process_baby_image_models(self, frame):
