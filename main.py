@@ -36,15 +36,17 @@ args = parser.parse_args()
 
 
 #Set-up the logger
-logfile = os.getenv("SLEEP_DATA_PATH") + '/sleepy_logs.log'
-logging.basicConfig(filename=logfile,
-                    filemode='a+',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.INFO)
+logger_kwargs = {
+    'format': '%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    'datefmt': '%H:%M:%S',
+    'level': logging.DEBUG if args.verbose else logging.INFO
+    }
 
-#Load configuration from .env file
-load_dotenv()
+if args.log_on_screen:
+    logging.basicConfig(**logger_kwargs)
+else:
+    logfile = args.log_path + '/sleepy_logs.log'
+    logging.basicConfig(filename=logfile, filemode='a+', **logger_kwargs)
 
 # Queue shared between the frame publishing thread and the consuming thread
 # This is to get around an underlying bug, described at end of this file.
