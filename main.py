@@ -49,13 +49,61 @@ else:
     logging.basicConfig(filename=logfile, filemode='a+', **logger_kwargs)
 
 # Queue shared between the frame publishing thread and the consuming thread
-# This is to get around an underlying bug, described at end of this file.
-#frame_q = deque(maxlen=20)
+# Had to split frame receive and processing into different threads due to underlying FFMPEG issue. Read more here:
+# https://stackoverflow.com/questions/49233433/opencv-read-errorh264-0x8f915e0-error-while-decoding-mb-53-20-bytestream
+# Current solution is to insert into deque on the thread receiving images, and process on the other
+frame_q = deque(maxlen=2)
+terminate_event = Event()
 
 #Load SleepyBaby
-#logging.info('Initializing...')
-#sleepy_baby = SleepyBaby()
-#logging.info('\nInitialization complete.')
+logging.info('Initializing...')
+sleepy_baby = SleepyBaby(body_min_detection_confidence=0.1, body_min_tracking_confidence=0.1)
+#sleepy_baby.set_working_area(800, 300, 1100, 550)
+sleepy_baby.set_output(show_body_details=True)
+sleepy_baby.start_thread(frame_q, terminate_event)
+logging.info('Initialization complete.')
+
+#Create a thread to show the results of the processing
+def show_video(sb_obj):
+    logging.info("show_video thread is started")
+    while terminate_event.is_set() is False:
+        if sb_obj.processed_frame is not None:
+            print("Thread")
+            cv2.imshow("VIDEO", cv2.resize(sb_obj.processed_frame, (960,540)))
+            cv2.waitKey(1)
+            sb_obj.processed_frame = None
+        else:
+            logging.debug("No image to process")
+        time.sleep(0.3)
+    logging.info("show_video thread is terminated by event")
+p2 = Thread(target=show_video, args=(sleepy_baby,))
+
+
+try:
+    vcap = cv2.VideoCapture(args.source)
+    if vcap.isOpened():
+        success = True
+        logging.info("Start receiving frames.")
+        fps = vcap.get(cv2.CAP_PROP_FPS)
+        p2.start()
+        while success:
+            success, img = vcap.read()
+            if success is False:
+                terminate_event.set() #Error in streaming reading
+            frame_q.append(img) #cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            if args.recorded:
+                time.sleep(1.0/fps)
+        logging.error("Error in frame retrieve. Program will be ended")
+    else:
+        logging.error("Unable to open the streaming")
+except KeyboardInterrupt:
+    logging.error("User Abort")
+finally:
+    terminate_event.set()
+    vcap.release()
+
+
+
 
 
 # Below http server is used for the web app to request latest sleep data
@@ -91,49 +139,11 @@ else:
 #            producer_q.append(img)
 
 
-# Had to split frame receive and processing into different threads due to underlying FFMPEG issue. Read more here:
-# https://stackoverflow.com/questions/49233433/opencv-read-errorh264-0x8f915e0-error-while-decoding-mb-53-20-bytestream
-# Current solution is to insert into deque on the thread receiving images, and process on the other
+
 #p1 = Thread(target=receive, args=(frame_q,))
 #p2 = Thread(target=sleepy_baby.live, args=(frame_q,))
 #p1.start()
 #p2.start()
-
-# Note: to test w/ recorded footage, comment out above threads, and uncomment next line
-# TODO: use command line args rather than commenting out code
-# sleepy_baby.recorded()
-
-frame_q = deque(maxlen=2)
-terminate_event = Event()
-
-#Load SleepyBaby
-sleepy_baby = SleepyBaby(body_min_detection_confidence=0.1, body_min_tracking_confidence=0.1)
-sleepy_baby.set_working_area(800, 300, 1100, 550)
-sleepy_baby.set_output(show_body_details=True)
-sleepy_baby.start_thread(frame_q, terminate_event)
-
-def show_video(sb_obj):
-    while terminate_event.is_set() is False:
-        if sb_obj.processed_frame is not None:
-            cv2.imshow("VIDEO", cv2.resize(sb_obj.processed_frame, (960,540)))
-            cv2.waitKey(1)
-            sb_obj.processed_frame = None
-            time.sleep(0.3)
-p2 = Thread(target=show_video, args=(sleepy_baby,))
-p2.start()
-
-try:
-    vcap = cv2.VideoCapture("rtsp://192.168.62.198/ch0_0.h264")
-    #vcap = cv2.VideoCapture("rtsp://192.168.62.185:1935/")
-    while True:
-        _, img = vcap.read()
-        frame_q.append(img) #cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-except KeyboardInterrupt:
-    terminate_event.set()
-    logging.error("User Abort")
-
-
-
 
 
 # video = 0
