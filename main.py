@@ -5,7 +5,7 @@ from collections import deque
 import _thread
 import logging
 import time
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 # from cast_service import CastSoundService
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
@@ -15,6 +15,25 @@ from sleepy_baby import Frame
 # Uncomment if want phone notifications during daytime wakings.
 # Configuration of telegram API key in this dir also needed.
 # import telegram_send
+
+#Load configuration from .env file
+config = dotenv_values()
+
+#Config command ling
+parser = argparse.ArgumentParser(
+    prog="Sleepy Baby",
+    description="Library to monitor the status of your baby based on image recognition"
+)
+
+parser.add_argument('-s', '--source', type=str, default=config['VIDEO_PATH'], help="Input path for video")
+parser.add_argument('-v', '--verbose', action="store_true", default=config['DEBUG'].lower()=="true", help="Activate Debug Mode")
+parser.add_argument('--log-on-screen', action="store_true", help="Show logs on screen instead of saving on file")
+parser.add_argument('--log-path', default=config['SLEEP_DATA_PATH'], help="Set log path")
+parser.add_argument('-r', '--recorded', action="store_true", help="Input is a recorded video. delay should be applied to simulate real-time")
+
+args = parser.parse_args()
+
+
 
 #Set-up the logger
 logfile = os.getenv("SLEEP_DATA_PATH") + '/sleepy_logs.log'
