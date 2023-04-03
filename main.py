@@ -1,3 +1,4 @@
+import argparse
 import cv2
 from threading import Thread, Event
 import os
@@ -68,7 +69,6 @@ def show_video(sb_obj):
     logging.info("show_video thread is started")
     while terminate_event.is_set() is False:
         if sb_obj.processed_frame is not None:
-            print("Thread")
             cv2.imshow("VIDEO", cv2.resize(sb_obj.processed_frame, (960,540)))
             cv2.waitKey(1)
             sb_obj.processed_frame = None
