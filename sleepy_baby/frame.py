@@ -66,7 +66,11 @@ class Frame:
         return frame
     
 
-    def add_body_details(self, pose_landmarks):
+    def add_body_details(self, 
+                         pose_landmarks, 
+                         landmark_color=(255, 150, 255), 
+                         landmark_thickness=2, 
+                         landmark_circle_radius=2):
         if pose_landmarks:
             self.logger.debug("Body detected in the frame")
             CUTOFF_THRESHOLD = 10  # head and face
@@ -78,32 +82,36 @@ class Frame:
             mp_utils.draw_landmarks(self.w_data,
                                     pose_landmarks,
                                     MY_CONNECTIONS, 
-                                    landmark_drawing_spec=mp_utils.DrawingSpec( color=(255, 0, 0),
-                                                                                thickness=10,
-                                                                                circle_radius=2),
-                                    connection_drawing_spec=mp_utils.DrawingSpec(color=(0, 0, 255),
-                                                                                thickness=3,
-                                                                                circle_radius=2)
+                                    landmark_drawing_spec=mp_utils.DrawingSpec( color=landmark_color,
+                                                                                thickness=landmark_thickness,
+                                                                                circle_radius=landmark_circle_radius)
                                     )
         else:
             self.logger.debug("No body detected in frame")
     
-    def add_wrist_position(self, pose_landmarks, show_text=True):
+    def add_wrist_position(self, pose_landmarks, show_text=True, text_color=(255,0,0), point_color=(255,0,0), point_radius=2):
         if pose_landmarks:
             left_wrist = (int(self.width * pose_landmarks.landmark[15].x), int(self.height * pose_landmarks.landmark[15].y))
             right_wrist = (int(self.width * pose_landmarks.landmark[16].x), int(self.height * pose_landmarks.landmark[16].y))
 
-            cv2.circle(self.w_data, left_wrist, radius=5, color=(255,255,0), thickness=-1)
-            cv2.circle(self.w_data, right_wrist, radius=5, color=(255,255,0), thickness=-1)
+            cv2.circle(self.w_data, left_wrist, radius=point_radius, color=point_color, thickness=-1)
+            cv2.circle(self.w_data, right_wrist, radius=point_radius, color=point_color, thickness=-1)
             if show_text:
-                self.w_data = cv2.putText(self.w_data, "Left wrist", left_wrist, 2, 1, (255,0,0), 2, 2)
-                self.w_data = cv2.putText(self.w_data, "Right wrist", right_wrist, 2, 1, (255,0,0), 2, 2)
+                self.w_data = cv2.putText(self.w_data, "Left wrist", left_wrist, 2, 1, text_color, 2, 2)
+                self.w_data = cv2.putText(self.w_data, "Right wrist", right_wrist, 2, 1, text_color, 2, 2)
 
     def add_analysis_frame(self):
         self.logger.debug("Draw the analysis frame")
         self.w_data = cv2.rectangle(self.w_data, [0,0], (self.w_data.shape[1], self.w_data.shape[0]), color=(0,255,0), thickness=5)
 
-    def add_face_details(self, multi_face_landmarks):
+    def add_face_details(self, 
+                         multi_face_landmarks, 
+                         details_thickness = 1,
+                         left_eye_color=(255, 255, 0), 
+                         right_eye_color=(255, 150, 255),
+                         top_lip_color = (255, 150, 255),
+                         bottom_lip_color = (255, 255, 0)
+                         ):
         """
         add_face_details_to_image adds face details to image passed in arguments.
 
@@ -125,19 +133,37 @@ class Frame:
                 # INDICIES: https://github.com/tensorflow/tfjs-models/blob/838611c02f51159afdd77469ce67f0e26b7bbb23/face-landmarks-detection/src/mediapipe-facemesh/keypoints.ts
                 # https://github.com/google/mediapipe/blob/master/mediapipe/python/solutions/face_mesh_connections.py
 
-                mp.solutions.drawing_utils.draw_landmarks(
-                    image=self.w_data,
-                    landmark_list=face_landmarks,
-                    connections=mp.solutions.face_mesh.FACEMESH_RIGHT_EYE,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_utils.DrawingSpec(color=(255, 150, 255), thickness=5, circle_radius=1))
+                if right_eye_color is not None:
+                    mp.solutions.drawing_utils.draw_landmarks(
+                        image=self.w_data,
+                        landmark_list=face_landmarks,
+                        connections=mp.solutions.face_mesh.FACEMESH_RIGHT_EYE,
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_utils.DrawingSpec(color=right_eye_color, thickness=details_thickness, circle_radius=1))
 
-                mp.solutions.drawing_utils.draw_landmarks(
-                    image=self.w_data,
-                    landmark_list=face_landmarks,
-                    connections=mp.solutions.face_mesh.FACEMESH_LEFT_EYE,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_utils.DrawingSpec(color=(255, 255, 0), thickness=5, circle_radius=1))
+                if left_eye_color is not None:
+                    mp.solutions.drawing_utils.draw_landmarks( #a[0:9]+a[20:29]
+                        image=self.w_data,
+                        landmark_list=face_landmarks,
+                        connections=mp.solutions.face_mesh.FACEMESH_LEFT_EYE,
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_utils.DrawingSpec(color=left_eye_color, thickness=details_thickness, circle_radius=1))
+                
+                if top_lip_color is not None:
+                    mp.solutions.drawing_utils.draw_landmarks(
+                        image=self.w_data,
+                        landmark_list=face_landmarks,
+                        connections=list(map(lambda x: x[29:40]+x[9:20], [list(mp.solutions.face_mesh.FACEMESH_LIPS)]))[0],
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_utils.DrawingSpec(color=top_lip_color, thickness=details_thickness, circle_radius=1))
+                
+                if bottom_lip_color is not None:
+                    mp.solutions.drawing_utils.draw_landmarks(
+                        image=self.w_data,
+                        landmark_list=face_landmarks,
+                        connections=list(map(lambda x: x[0:9]+x[20:29], [list(mp.solutions.face_mesh.FACEMESH_LIPS)]))[0],
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_utils.DrawingSpec(color=bottom_lip_color, thickness=details_thickness, circle_radius=1))
         else:
             self.logger.debug("No face found")
 
