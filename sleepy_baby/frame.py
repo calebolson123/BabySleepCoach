@@ -143,9 +143,7 @@ class Frame:
 
     def add_progress_bar(self, percent, bar_width=500, bar_height = 20, bar_y_offset=100, backcolor=(255, 255, 117), forecolor=(0,0,255), textcolor=(255,0,0)): 
         # draw progress bar
-        adj_percent = 1.0 if percent / .6 >= 1.0 else percent / .6
-        display_perc = min(int((percent * 100) / 0.6), 100)
-
+        adj_percent = min(1.0, percent / 0.6)
         start_point = (int(self.width/2 - bar_width/2), self.height - bar_y_offset)
         end_point = (start_point[0] + bar_width, start_point[1] + bar_height)
         mid_point = (start_point[0] + int(bar_width * adj_percent), start_point[1] + bar_height)
@@ -153,4 +151,4 @@ class Frame:
 
         self.w_data = cv2.rectangle(self.w_data, start_point, end_point, backcolor, thickness = -1)
         self.w_data = cv2.rectangle(self.w_data, start_point, mid_point, forecolor, thickness = -1)
-        self.w_data = cv2.putText(self.w_data, str(display_perc) + "% Awake", (start_point[0], text_y_position), 2, 1, textcolor, 2, 2)
+        self.w_data = cv2.putText(self.w_data, str(int(adj_percent * 100)) + "% Awake", (start_point[0], text_y_position), 2, 1, textcolor, 2, 2)
