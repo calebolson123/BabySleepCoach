@@ -141,23 +141,16 @@ class Frame:
         else:
             self.logger.debug("No face found")
 
-    def add_progress_bar(self, percent): 
+    def add_progress_bar(self, percent, bar_width=500, bar_height = 20, bar_y_offset=100, backcolor=(255, 255, 117), forecolor=(0,0,255), textcolor=(255,0,0)): 
         # draw progress bar
-        bar_y_offset = self.height - 100
-        bar_width = 500
-        w = self.width
-        start_point = (int(w/2 - bar_width/2), bar_y_offset)
-        end_point = (int(w/2 + bar_width/2), bar_y_offset + 20)
         adj_percent = 1.0 if percent / .6 >= 1.0 else percent / .6
-        
-        progress_end_point = (int(w/2 - bar_width/2 + (bar_width*(adj_percent))), 20 + bar_y_offset)
-        color = (255, 255, 117)
-        progress_color = (0, 0, 255)
-        thickness = -1
+        display_perc = min(int((percent * 100) / 0.6), 100)
 
-        self.w_data = cv2.rectangle(self.w_data, start_point, end_point, color, thickness)
-        self.w_data = cv2.rectangle(self.w_data, start_point, progress_end_point, progress_color, thickness)
-        display_perc = int((percent * 100) / 0.6)
-        display_perc = 100 if display_perc >= 100 else display_perc
-        self.w_data = cv2.putText(self.w_data, str(display_perc) + "%", (int(w/2 - bar_width/2), 10 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
-        self.w_data = cv2.putText(self.w_data, "Awake", (int(w/2 - bar_width/2 + 85), 10 + bar_y_offset), 2, 1, (255,0,0), 2, 2)
+        start_point = (int(self.width/2 - bar_width/2), self.height - bar_y_offset)
+        end_point = (start_point[0] + bar_width, start_point[1] + bar_height)
+        mid_point = (start_point[0] + int(bar_width * adj_percent), start_point[1] + bar_height)
+        text_y_position = start_point[1] - int(bar_height / 5)
+
+        self.w_data = cv2.rectangle(self.w_data, start_point, end_point, backcolor, thickness = -1)
+        self.w_data = cv2.rectangle(self.w_data, start_point, mid_point, forecolor, thickness = -1)
+        self.w_data = cv2.putText(self.w_data, str(display_perc) + "% Awake", (start_point[0], text_y_position), 2, 1, textcolor, 2, 2)
