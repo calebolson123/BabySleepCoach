@@ -85,7 +85,7 @@ class app:
         
         logging.info('Initialization complete.')
 
-    def live(self, source:str, return_image: bool = True):
+    def live(self, source:str = config['VIDEO_PATH'], return_image: bool = True):
         """
         Run App based on streaming video
 
