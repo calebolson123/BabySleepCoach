@@ -29,13 +29,14 @@ class SleepyBaby:
                  body_min_detection_confidence=0.8,
                  body_min_tracking_confidence=0.8,
                  face_min_detection_confidence=0.7,
-                 face_min_tracking_confidence=0.7):
+                 face_min_tracking_confidence=0.7,
+                 refine_landmarks = True):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("SleepyBaby is starting")
         self.processed_frame = None #It is used to produce post-processed video
         self.process_t = None #Process Thread
         self.face = mp.solutions.face_mesh.FaceMesh(max_num_faces=1,
-                                                    refine_landmarks=True,
+                                                    refine_landmarks=refine_landmarks,
                                                     min_detection_confidence=body_min_detection_confidence,
                                                     min_tracking_confidence=body_min_tracking_confidence)
         self.pose = mp.solutions.pose.Pose(min_detection_confidence=face_min_detection_confidence,
@@ -75,8 +76,6 @@ class SleepyBaby:
         self.process_t.start()
         self.evaluate_t = Thread(target=evaluate_loop, args=(self.logic, stop_event))
         self.evaluate_t.start()
-
-
 
     def set_working_area(self, x_offset=0, y_offset=0, width=None, height=None):
         self.x_offset = x_offset
