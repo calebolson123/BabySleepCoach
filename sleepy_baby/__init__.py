@@ -37,10 +37,10 @@ class SleepyBaby:
         self.process_t = None #Process Thread
         self.face = mp.solutions.face_mesh.FaceMesh(max_num_faces=1,
                                                     refine_landmarks=refine_landmarks,
-                                                    min_detection_confidence=body_min_detection_confidence,
-                                                    min_tracking_confidence=body_min_tracking_confidence)
-        self.pose = mp.solutions.pose.Pose(min_detection_confidence=face_min_detection_confidence,
-                                           min_tracking_confidence=face_min_tracking_confidence)
+                                                    min_detection_confidence=face_min_detection_confidence,
+                                                    min_tracking_confidence=face_min_tracking_confidence)
+        self.pose = mp.solutions.pose.Pose(min_detection_confidence=body_min_detection_confidence,
+                                           min_tracking_confidence=body_min_tracking_confidence)
         self.set_working_area() #Set entire area as working area
         self.set_output() #Set default values
         self.logic = DecisionLogic()

@@ -49,8 +49,10 @@ class app:
                  verbose: bool = config['DEBUG'],
                  log_on_screen: bool = False,
                  log_path: str = config['SLEEP_DATA_PATH'],
-                 body_min_detection_confidence: float = 0.1,
-                 body_min_tracking_confidence: float = 0.1,
+                 body_min_detection_confidence: float = 0.8,
+                 body_min_tracking_confidence: float = 0.8,
+                 face_min_detection_confidence: float = 0.7,
+                 face_min_tracking_confidence: float = 0.7,
                  working_area: tuple = None,
                  show_frame: bool=True, 
                  show_wrist_position: bool=True, 
@@ -71,8 +73,9 @@ class app:
         #Load SleepyBaby
         logging.info('Initializing...')
         self.sleepy_baby = SleepyBaby(body_min_detection_confidence=body_min_detection_confidence, 
-                                      body_min_tracking_confidence=body_min_tracking_confidence)
-        self.sleepy_baby.set_working_area(working_area_x, working_area_y, working_area_width, working_area_height)
+                                      body_min_tracking_confidence=body_min_tracking_confidence,
+                                      face_min_detection_confidence=face_min_detection_confidence,
+                                      face_min_tracking_confidence=face_min_tracking_confidence)
         if working_area:
             self.sleepy_baby.set_working_area(working_area[0], working_area[1], working_area[2], working_area[3])
         self.sleepy_baby.set_output(show_frame=show_frame, 
