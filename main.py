@@ -51,10 +51,7 @@ class app:
                  log_path: str = config['SLEEP_DATA_PATH'],
                  body_min_detection_confidence: float = 0.1,
                  body_min_tracking_confidence: float = 0.1,
-                 working_area_x: int = None,
-                 working_area_y: int = None,
-                 working_area_width: int = None,
-                 working_area_height: int = None,
+                 working_area: tuple = None,
                  show_frame: bool=True, 
                  show_wrist_position: bool=True, 
                  show_wrist_text: bool=True, 
@@ -76,6 +73,8 @@ class app:
         self.sleepy_baby = SleepyBaby(body_min_detection_confidence=body_min_detection_confidence, 
                                       body_min_tracking_confidence=body_min_tracking_confidence)
         self.sleepy_baby.set_working_area(working_area_x, working_area_y, working_area_width, working_area_height)
+        if working_area:
+            self.sleepy_baby.set_working_area(working_area[0], working_area[1], working_area[2], working_area[3])
         self.sleepy_baby.set_output(show_frame=show_frame, 
                                     show_wrist_position=show_wrist_position, 
                                     show_wrist_text=show_wrist_text, 
