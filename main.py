@@ -112,6 +112,16 @@ class app:
             define if post processed image should be displayed, default: True
         """        
         self._process_streaming(source, apply_delay_between_frames=True, return_image=return_image)
+
+    def photo(self, source:str, output_size: tuple=None):
+        self.sleepy_baby.show_progress_bar = False
+        img = cv2.imread(source) 
+        output = self.sleepy_baby.processFrame(img)
+        if output_size:
+            output = cv2.resize(output, output_size)
+        cv2.imshow("Output", output)
+        cv2.waitKey()
+
         
     
     def _process_streaming(self, source, apply_delay_between_frames=False, return_image=True):
