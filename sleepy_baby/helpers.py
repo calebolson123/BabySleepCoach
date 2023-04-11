@@ -98,27 +98,16 @@ def check_mouth_open(landmarks, ratio = 0.8):
     return mouth_height > min(top_lip_height, bottom_lip_height) * ratio
 
 # Resizes a image and maintains aspect ratio
-def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
-    # Grab the image size and initialize dimensions
-    dim = None
-    (h, w) = image.shape[:2]
-
+def maintain_aspect_ratio_resize(image, width:int=None, height:int=None, inter=cv2.INTER_AREA):
     # Return original image if no need to resize
     if width is None and height is None:
         return image
-
-    # We are resizing height if width is none
-    if width is None:
-        # Calculate the ratio of the height and construct the dimensions
-        r = height / float(h)
-        dim = (int(w * r), height)
-    # We are resizing width if height is none
+    (h, w) = image.shape[:2] # Grab the image size and initialize dimensions
+    # Select smallest format:
+    if ((width or w) / w) < ((height or h) / h) and (width is not None):
+        dim = (width, int(h * width / w))
     else:
-        # Calculate the ratio of the 0idth and construct the dimensions
-        r = width / float(w)
-        dim = (width, int(h * r))
-
-    # Return the resized image
+        dim = (int(w * height / height), height)
     return cv2.resize(image, dim, interpolation=inter)
 
 @lru_cache(maxsize=10)

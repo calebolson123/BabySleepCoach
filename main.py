@@ -12,7 +12,7 @@ from dotenv import dotenv_values
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 from sleepy_baby import SleepyBaby
-from sleepy_baby import Frame
+from sleepy_baby import helpers
 
 # Uncomment if want phone notifications during daytime wakings.
 # Configuration of telegram API key in this dir also needed.
@@ -114,9 +114,11 @@ class app:
         """        
         self._process_streaming(source, apply_delay_between_frames=True, return_image=return_image)
 
-    def photo(self, source:str, output_size: tuple=None):
+    def photo(self, source:str, output_size: tuple=None, max_width:int = 1920, max_height:int = 1080):
         self.sleepy_baby.show_progress_bar = False
         img = cv2.imread(source) 
+        if (img.shape[1]>max_width) or (img.shape[0]>max_height):
+            img = helpers.maintain_aspect_ratio_resize(img, max_width, max_height)
         output = self.sleepy_baby.processFrame(img)
         if output_size:
             output = cv2.resize(output, output_size)
@@ -125,13 +127,14 @@ class app:
 
         
     
-    def _process_streaming(self, source, apply_delay_between_frames=False, return_image=True):
+    def _process_streaming(self, source, apply_delay_between_frames=False, return_image=True, max_width=1920, max_height=1080):
         try:
             vcap = cv2.VideoCapture(source)
             if vcap.isOpened():
                 success = True
                 logging.info("Start receiving frames.")
                 fps = vcap.get(cv2.CAP_PROP_FPS)
+                rescale = (vcap.get(cv2.CAP_PROP_FRAME_WIDTH)>max_width) or (vcap.get(cv2.CAP_PROP_FRAME_HEIGHT)>max_height)
                 self.sleepy_baby.start_thread(frame_q, terminate_event)
                 if return_image:
                     self.show_video_thread = Thread(target=show_video, args=(self.sleepy_baby,))
@@ -140,6 +143,8 @@ class app:
                     success, img = vcap.read()
                     if success is False:
                         terminate_event.set() #Error in streaming reading
+                    if rescale:
+                        img = helpers.maintain_aspect_ratio_resize(img, max_width, max_height)
                     frame_q.append(img) #cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
                     if apply_delay_between_frames:
                         time.sleep(1.0/fps)
