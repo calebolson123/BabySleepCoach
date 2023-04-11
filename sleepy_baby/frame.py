@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import mediapipe as mp
 import cv2
+from .helpers import gamma_correction
 
 mp_utils = mp.solutions.drawing_utils
 
@@ -52,7 +53,7 @@ class Frame:
         """
         return self.frame[self.y_offset:self.y_offset+self.height, self.x_offset:self.x_offset+self.width].copy()
     
-    def getAugmentedFrame(self) -> np.ndarray:
+    def getAugmentedFrame(self, gamma: float =.8) -> np.ndarray:
         """
         It generates the a new frame integrating the modified working area.
 
@@ -61,7 +62,7 @@ class Frame:
         np.ndarray
             Image integrated
         """
-        frame = self.frame.copy()
+        frame =  cv2.LUT(self.frame.copy(), gamma_correction(gamma))
         frame[self.y_offset:self.y_offset+self.height, self.x_offset:self.x_offset+self.width] = self.w_data
         return frame
     

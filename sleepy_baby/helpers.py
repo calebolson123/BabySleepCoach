@@ -3,6 +3,7 @@ import cv2
 import os
 from pyhatchbabyrest import PyHatchBabyRest
 from dotenv import load_dotenv
+from functools import lru_cache
 
 load_dotenv()
 
@@ -131,9 +132,8 @@ def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER
     # Return the resized image
     return cv2.resize(image, dim, interpolation=inter)
 
-
-def gamma_correction(self, og, gamma):
+@lru_cache(maxsize=10)
+def gamma_correction(gamma):
     invGamma = 1 / gamma
     table = [((i / 255) ** invGamma) * 255 for i in range(256)]
-    table = np.array(table, np.uint8)
-    return cv2.LUT(og, table)
+    return np.array(table, np.uint8)
