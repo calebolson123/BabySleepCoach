@@ -76,28 +76,23 @@ def set_hatch(is_awake):
 
 def get_top_lip_height(landmarks):
     #Indexes of landmarks are reported at https://raw.githubusercontent.com/google/mediapipe/a908d668c730da128dfa8d9f6bd25d519d006692/mediapipe/modules/face_geometry/data/canonical_face_model_uv_visualization.png
-    top_lip_left = get_distance_between_landmarks(landmarks, 39, 81)
-    top_lip_center = get_distance_between_landmarks(landmarks, 0, 13)
-    top_lip_right = get_distance_between_landmarks(landmarks, 269, 311)
-    return  (top_lip_left + top_lip_center + top_lip_right) / 3
-
+    return get_height(landmarks, [(39,81), (0,13), (269,311)])
     
 def get_bottom_lip_height(landmarks):
     #Indexes of landmarks are reported at https://raw.githubusercontent.com/google/mediapipe/a908d668c730da128dfa8d9f6bd25d519d006692/mediapipe/modules/face_geometry/data/canonical_face_model_uv_visualization.png
-    bottom_lip_left = get_distance_between_landmarks(landmarks, 181, 178)
-    bottom_lip_center = get_distance_between_landmarks(landmarks, 17, 14)
-    bottom_lip_right = get_distance_between_landmarks(landmarks, 405, 402)
-    return  (bottom_lip_left + bottom_lip_center + bottom_lip_right) / 3
-
-
+    return get_height(landmarks, [(181,178), (17,14), (405,402)])
 
 def get_mouth_height(landmarks):
     #Indexes of landmarks are reported at https://raw.githubusercontent.com/google/mediapipe/a908d668c730da128dfa8d9f6bd25d519d006692/mediapipe/modules/face_geometry/data/canonical_face_model_uv_visualization.png
-    open_mouth_left = get_distance_between_landmarks(landmarks, 178, 81)
-    open_mouth_center = get_distance_between_landmarks(landmarks, 14, 13)
-    open_mouth_right = get_distance_between_landmarks(landmarks, 402, 311)
-    return  (open_mouth_left + open_mouth_center + open_mouth_right) / 3
+    return get_height(landmarks, [(178,81), (14,13), (402,311)])
 
+def get_height(landmarks, tuples):
+    heights = []
+    for tuple in tuples:
+        p0 = get_point_as_array(landmarks[tuple[0]])
+        p1 = get_point_as_array(landmarks[tuple[1]])
+        heights.append(np.linalg.norm(p0 - p1))
+    return np.mean(heights)
 
 def check_mouth_open(landmarks, ratio = 0.8):
     top_lip_height =    get_top_lip_height(landmarks)
@@ -106,7 +101,6 @@ def check_mouth_open(landmarks, ratio = 0.8):
 
     # if mouth is open more than lip height * ratio, return true.
     return mouth_height > min(top_lip_height, bottom_lip_height) * ratio
-
 
 # Resizes a image and maintains aspect ratio
 def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
