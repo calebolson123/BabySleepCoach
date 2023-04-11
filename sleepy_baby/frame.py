@@ -179,3 +179,8 @@ class Frame:
         self.w_data = cv2.rectangle(self.w_data, start_point, end_point, backcolor, thickness = -1)
         self.w_data = cv2.rectangle(self.w_data, start_point, mid_point, forecolor, thickness = -1)
         self.w_data = cv2.putText(self.w_data, str(int(adj_percent * 100)) + "% Awake", (start_point[0], text_y_position), 2, 1, textcolor, 2, 2)
+
+    def add_status(self, asleep):
+        text = 'Sleepy Baby' if asleep else 'Wakey Baby'
+        text_color = (255,191,0) if asleep else (0,140,255)
+        cv2.putText(self.w_data, text, (int(self.w_data.shape[1]/4), int(self.w_data.shape[0]/2)), 2, 3, text_color, 2, 2)

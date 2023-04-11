@@ -76,7 +76,8 @@ class app:
         self.sleepy_baby = SleepyBaby(body_min_detection_confidence=body_min_detection_confidence, 
                                       body_min_tracking_confidence=body_min_tracking_confidence,
                                       face_min_detection_confidence=face_min_detection_confidence,
-                                      face_min_tracking_confidence=face_min_tracking_confidence)
+                                      face_min_tracking_confidence=face_min_tracking_confidence,
+                                      debug=verbose)
         if working_area:
             self.sleepy_baby.set_working_area(working_area[0], working_area[1], working_area[2], working_area[3])
         self.sleepy_baby.set_output(show_frame=show_frame, 

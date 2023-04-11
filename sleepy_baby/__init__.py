@@ -30,9 +30,11 @@ class SleepyBaby:
                  body_min_tracking_confidence=0.8,
                  face_min_detection_confidence=0.7,
                  face_min_tracking_confidence=0.7,
-                 refine_landmarks = True):
+                 refine_landmarks = True,
+                 debug = False):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("SleepyBaby is starting")
+        self.debug = debug
         self.processed_frame = None #It is used to produce post-processed video
         self.process_t = None #Process Thread
         self.face = mp.solutions.face_mesh.FaceMesh(max_num_faces=1,
@@ -99,6 +101,8 @@ class SleepyBaby:
                 frame.add_face_details(face)
             if self.show_progress_bar:
                 frame.add_progress_bar(self.logic.avg_awake)
+            if self.debug:
+                frame.add_status(self.logic.avg_awake < 0.6)
             return frame.getAugmentedFrame()
 
     def process_baby_image_models(self, frame):
