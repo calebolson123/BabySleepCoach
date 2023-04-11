@@ -1,12 +1,7 @@
 import numpy as np
 import cv2
-import os
 from pyhatchbabyrest import PyHatchBabyRest
-from dotenv import load_dotenv
 from functools import lru_cache
-
-load_dotenv()
-
 
 def get_point_as_array(point):
     """
