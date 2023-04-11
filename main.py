@@ -21,6 +21,7 @@ from sleepy_baby import Frame
 #Load configuration from .env file
 config = dotenv_values()
 config['DEBUG'] = (config['DEBUG'].lower()=="true") #Transform in bool
+config['WORKING_AREA'] = None if config['AREA_X'] == "" else (int(config['AREA_X']), int(config['AREA_Y']), int(config['AREA_WIDTH']), int(config['AREA_HEIGHT']))
 
 # # Queue shared between the frame publishing thread and the consuming thread
 # # Had to split frame receive and processing into different threads due to underlying FFMPEG issue. Read more here:
@@ -53,7 +54,7 @@ class app:
                  body_min_tracking_confidence: float = 0.8,
                  face_min_detection_confidence: float = 0.7,
                  face_min_tracking_confidence: float = 0.7,
-                 working_area: tuple = None,
+                 working_area: tuple = config['WORKING_AREA'],
                  show_frame: bool=True, 
                  show_wrist_position: bool=True, 
                  show_wrist_text: bool=True, 
