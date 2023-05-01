@@ -133,7 +133,7 @@ const createCrazyCircles = (events, forecast) => {
   const offset = 50;
 
   const img = new Image();
-  img.src = "http://this_device_ip:8000//absolute_path_to_project_dir/webapp/public/baby_face_192.png";
+  img.src = process.env.REACT_APP_BACKEND_URL + "/webapp/public/baby_face_192.png";
   img.addEventListener("load", (e) => {
       context.save();
       context.beginPath();
@@ -371,7 +371,7 @@ const processSleepLogs = async (forecast) => {
 
   const file = forecast ? 'sleep_logs_forecasted' : 'sleep_logs';
   // Request sleep log data from HTTP server on the device (somewhere on LAN) which is running with sleep tracking service
-  const sleepLogs = await d3.csv(`http://ip_address_of_device_running_sleep_tracker:8000/path_on_device_to_sleep_log_csv_file/${file}.csv`);
+  const sleepLogs = await d3.csv(process.env.REACT_APP_BACKEND_URL + `/${file}.csv`);
 
   // convert timestamps to date objects
   sleepLogs.forEach((d) => {
