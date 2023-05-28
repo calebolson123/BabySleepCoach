@@ -447,6 +447,7 @@ class SleepyBaby():
 
                             try:
                                 img = cv2.resize(img, (960, 540))
+                                self.debug_image = img
                                 cv2.imshow('baby', img)
                                 if cv2.waitKey(1) & 0xFF == ord('q'):
                                     break
@@ -512,6 +513,7 @@ class SleepyBaby():
                         img[y:y+h, x:x+w] = tmp
 
                         img = cv2.resize(img, (960, 540))
+                        self.current_image = img
                         cv2.imshow('baby', maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1]))
 
                         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -535,6 +537,24 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET')
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
         return super(CORSRequestHandler, self).end_headers()
+    
+    def do_GET(self):
+        print('connection from:', self.address_string())
+
+        if self.path == '/videostream':
+            print('mjpg')
+            self.send_response(200)
+            self.send_header('Content-type', 'multipart/x-mixed-replace; boundary=--jpgboundary')
+            self.end_headers()
+
+            while True:
+                ret, jpg = cv2.imencode('.jpg', sleepy_baby.current_image)
+                self.wfile.write("--jpgboundary")
+                self.send_header('Content-type', 'image/jpeg')
+                self.send_header('Content-length', str(jpg.size))
+                self.end_headers()
+                self.wfile.write(jpg.tostring())
+                time.sleep(0.05)
 
 def start_server():
     httpd = HTTPServer(('0.0.0.0', 8000), CORSRequestHandler)
