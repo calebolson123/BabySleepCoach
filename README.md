@@ -20,6 +20,7 @@ This repo contains code to run the AI Baby Sleep Tracking service as well as a w
 
 - Camera which supports RTSP
 - Compute accessible via HTTP requests (I used a Raspberry Pi, but you can use any computer)
+- Python 3.10 or lower (3.11 is not supported by MediaPipe [[see](https://github.com/google/mediapipe/issues/1325)])
 
 ## Setup
 
