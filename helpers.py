@@ -133,7 +133,7 @@ def check_mouth_open(landmarks):
 
 
 # Resizes a image and maintains aspect ratio
-def maintain_aspect_ratio_resize(self, image, width=None, height=None, inter=cv2.INTER_AREA):
+def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     # Grab the image size and initialize dimensions
     dim = None
     (h, w) = image.shape[:2]
@@ -157,7 +157,7 @@ def maintain_aspect_ratio_resize(self, image, width=None, height=None, inter=cv2
     return cv2.resize(image, dim, interpolation=inter)
 
 
-def gamma_correction(self, og, gamma):
+def gamma_correction(og, gamma):
     invGamma = 1 / gamma
     table = [((i / 255) ** invGamma) * 255 for i in range(256)]
     table = np.array(table, np.uint8)
