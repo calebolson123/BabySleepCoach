@@ -481,7 +481,7 @@ class SleepyBaby():
                 w = settings.get('baby_roi_w', 800)
 
                 if img.shape[0] > 1080 and img.shape[1] > 1920: # max res 1080p
-                    img = maintain_aspect_ratio_resize(width=self.frame_dim[0], height=self.frame_dim[1])
+                    img = maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1])
 
                 img_to_process = img[y:y+h, x:x+w]
                 self.current_image = img.copy()
