@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # from cast_service import CastSoundService
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from helpers import check_eyes_open, set_hatch, check_mouth_open, maintain_aspect_ratio_resize, gamma_correction
-
+import yaml
 load_dotenv()
 
 # Uncomment if want phone notifications during daytime wakings.
@@ -32,6 +32,12 @@ logging.basicConfig(filename=logfile,
 # This is to get around an underlying bug, described at end of this file.
 frame_q = deque(maxlen=20)
 
+def loadSettings():
+    # Load the settings
+    with open('./settings.yml', 'r') as file:
+        return yaml.safe_load(file) or {} # if file is empty, create empty dict
+
+settings = loadSettings()
 class SleepyBaby():
 
     # TODO: break up this class, so big ew
@@ -65,6 +71,9 @@ class SleepyBaby():
         self.multi_face_landmarks = []
         self.is_awake = False
         self.ser = None # serial connection to arduino for controlling demon owl
+
+        self.current_image = np.zeros((settings.get('image_height_scaled', 540), settings.get('image_width_scaled', 960),3), np.uint8) # black image for init
+        self.debug_image = np.zeros((settings.get('image_height_scaled', 540), settings.get('image_width_scaled', 960),3), np.uint8) # black image for init 
 
         # If demon owl mode, setup connection to arduino and cast service for playing audio
         if os.getenv("OWL", 'False').lower() in ('true', '1'):
@@ -383,10 +392,10 @@ class SleepyBaby():
 
                     if all(e is not None for e in [frame, img]):
                         # bounds to actual run models/analysis on...no need to look for babies outside of the crib
-                        x = 800
-                        y = 250
-                        h = 650
-                        w = 600
+                        x = settings.get('baby_roi_x', 700)
+                        y = settings.get('baby_roi_y', 125)
+                        h = settings.get('baby_roi_h', 1000)
+                        w = settings.get('baby_roi_w', 800)
 
                         if img.shape[0] > 1080 and img.shape[1] > 1920: # max res 1080p
                             img = maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1])
@@ -446,7 +455,8 @@ class SleepyBaby():
                             img[y:y+h, x:x+w] = tmp
 
                             try:
-                                img = cv2.resize(img, (960, 540))
+                                img = cv2.resize(img, (settings.get('image_width_scaled', 960), settings.get('image_height_scaled', 540)))
+                                self.debug_image = img
                                 cv2.imshow('baby', img)
                                 if cv2.waitKey(1) & 0xFF == ord('q'):
                                     break
@@ -465,15 +475,23 @@ class SleepyBaby():
                     continue
 
                 # bounds to actual run models/analysis on...no need to look for babies outside of the crib
-                x = 700
-                y = 125
-                h = 1000
-                w = 800
+                x = settings.get('baby_roi_x', 700)
+                y = settings.get('baby_roi_y', 125)
+                h = settings.get('baby_roi_h', 1000)
+                w = settings.get('baby_roi_w', 800)
 
                 if img.shape[0] > 1080 and img.shape[1] > 1920: # max res 1080p
                     img = maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1])
 
                 img_to_process = img[y:y+h, x:x+w]
+                self.current_image = img.copy()
+                if self.is_awake:
+                    text_awake = "Awake"
+                else:
+                    text_awake = "Asleep"
+                height, width = self.current_image.shape[:2]
+                cv2.putText(self.current_image, text_awake,(20, (int)(height-height*0.1)), 2, 1, (255,0,0), 2, 2)   
+                
 
                 debug_img = self.frame_logic(img_to_process)
 
@@ -511,7 +529,8 @@ class SleepyBaby():
 
                         img[y:y+h, x:x+w] = tmp
 
-                        img = cv2.resize(img, (960, 540))
+                        img = cv2.resize(img, (settings.get('image_width_scaled', 960), settings.get('image_height_scaled', 540)))
+                        self.debug_image = img.copy()
                         cv2.imshow('baby', maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1]))
 
                         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -535,6 +554,41 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET')
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
         return super(CORSRequestHandler, self).end_headers()
+    
+    def do_GET(self):
+        print('connection from:', self.address_string())
+
+        if self.path == '/videostream' or self.path == '/videostream_debug':
+            print('videostream')
+            self.send_response(200)
+            self.send_header('Content-type', 'multipart/x-mixed-replace; boundary=--jpgboundary')
+            self.end_headers()
+
+            while True:
+                try:
+                    if self.path == '/videostream_debug':
+                        image_to_show = sleepy_baby.debug_image
+                    else:
+                        image_to_show = sleepy_baby.current_image
+                    ret, jpg = cv2.imencode('.jpg', image_to_show)
+                    self.send_header('Content-type','multipart/x-mixed-replace; boundary=--jpgboundary')
+                    self.send_header('Content-length', str(jpg.size))
+                    self.end_headers()
+                    self.wfile.write(jpg.tobytes())
+                    time.sleep(0.05)
+                except Exception as e:
+                    print("Videostream error: ", e)
+                    break
+
+        elif self.path == '/reload_settings':
+            global settings
+            settings = loadSettings()
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write('<html><head></head><body><h1>Reloaded</h1></body></html>'.encode("utf-8"))
+        else:
+            return SimpleHTTPRequestHandler.do_GET(self)
 
 def start_server():
     httpd = HTTPServer(('0.0.0.0', 8000), CORSRequestHandler)

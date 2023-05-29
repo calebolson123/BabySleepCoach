@@ -9,3 +9,4 @@ python-dotenv==0.21.1
 scikit_learn==1.2.1
 statsmodels==0.13.5
 tbats==1.1.2
+PyYAML==6.0
