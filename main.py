@@ -73,7 +73,7 @@ class SleepyBaby():
         self.ser = None # serial connection to arduino for controlling demon owl
 
         self.current_image = np.zeros((settings.get('image_height_scaled', 540), settings.get('image_width_scaled', 960),3), np.uint8) # black image for init
-        self.debug_image = np.zeros((settings.get('image_height_scaled', 540), settings.get('image_width_scaled', 960),3), np.uint8) # black image for init
+        self.debug_image = np.zeros((settings.get('image_height_scaled', 540), settings.get('image_width_scaled', 960),3), np.uint8) # black image for init 
 
         # If demon owl mode, setup connection to arduino and cast service for playing audio
         if os.getenv("OWL", 'False').lower() in ('true', '1'):
@@ -485,6 +485,13 @@ class SleepyBaby():
 
                 img_to_process = img[y:y+h, x:x+w]
                 self.current_image = img.copy()
+                if self.is_awake:
+                    text_awake = "Awake"
+                else:
+                    text_awake = "Asleep"
+                height, width = self.current_image.shape[:2]
+                cv2.putText(self.current_image, text_awake,(20, (int)(height-height*0.1)), 2, 1, (255,0,0), 2, 2)   
+                
 
                 debug_img = self.frame_logic(img_to_process)
 
