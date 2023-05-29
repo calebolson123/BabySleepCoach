@@ -1,0 +1,6 @@
+image_height_scaled: 540
+image_width_scaled: 960
+baby_roi_x: 700
+baby_roi_y: 125
+baby_roi_h: 1000
+baby_roi_w: 800
