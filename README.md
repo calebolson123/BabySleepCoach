@@ -50,6 +50,10 @@ Alternatively you can `touch .env` and then copy and paste the contents of `.env
 
 The sleep data is written to `sleep_logs.csv`. I primed this file with a few rows as an example. Feel free to remove these and start from scratch.
 
+It is possible to watch the live stream of the camera (and debug view) at: http://URL_OF_BACKEND:PORT_OF_BACKEND/videostream and http://URL_OF_BACKEND:PORT_OF_BACKEND/videostream_debug
+
+To reload the settings from the yml file, open http://URL_OF_BACKEND:PORT_OF_BACKEND/reload_settings
+
 ### Part 2: The Web App
 
 This one is more straight forward. Just make sure you have [`yarn`](https://yarnpkg.com/getting-started/install).
