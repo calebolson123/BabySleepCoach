@@ -14,8 +14,17 @@ from dotenv import load_dotenv
 # from cast_service import CastSoundService
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from helpers import check_eyes_open, set_hatch, check_mouth_open, maintain_aspect_ratio_resize, gamma_correction
+from paho.mqtt import client as mqtt_client
+import json
 
 load_dotenv()
+
+
+broker = str(os.getenv("MQTT_Broker_IP"))
+port = int(os.getenv("MQTT_Broker_Port"))
+client_id = str(os.getenv("MQTT_Client_ID"))
+username = str(os.getenv("MQTT_Broker_Username", default=""))
+password = str(os.getenv("MQTT_Broker_Password", default=""))
 
 # Uncomment if want phone notifications during daytime wakings.
 # Configuration of telegram API key in this dir also needed.
@@ -64,6 +73,7 @@ class SleepyBaby():
 
         self.multi_face_landmarks = []
         self.is_awake = False
+        self.is_awake_before = not self.is_awake
         self.ser = None # serial connection to arduino for controlling demon owl
 
         # If demon owl mode, setup connection to arduino and cast service for playing audio
@@ -519,6 +529,9 @@ class SleepyBaby():
                     except Exception as e:
                         print("Something went wrong: ", e)
 
+            if os.getenv("MQTT", 'False').lower() in ('true', '1'):
+                publish(client, self.is_awake, self.is_awake_before)
+            self.is_awake_before = self.is_awake
 
 ####################################
 # TODO: move out of this file, break it up
@@ -561,6 +574,46 @@ def receive(producer_q):
             producer_q.append(img)
 
 
+def connect_mqtt():
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT Broker!")
+        else:
+            print("Failed to connect, return code %d\n", rc)
+
+    client = mqtt_client.Client(client_id)
+    if username != "" and password != "":
+        client.username_pw_set(username, password)
+    client.on_connect = on_connect
+    client.connect(broker, port)
+    return client
+
+def publish(client, is_awake, is_awake_before):
+    if is_awake_before != is_awake:
+        if is_awake:
+            msg = "ON"
+        else:
+            msg = "OFF"
+        stateTopic = "homeassistant/binary_sensor/baby_sleep_coach/is_awake/state"
+        discoveryTopic = "homeassistant/binary_sensor/baby_sleep_coach/is_awake/config"
+        discoveryPayload = {"unique_id": "baby_sleep_coach_awake", "name":"Baby Sleep Coach: Baby awake", "state_topic": stateTopic,  "state_on": "ON", "state_off": "OFF"}
+
+        result = client.publish(discoveryTopic, payload=json.dumps(discoveryPayload), retain=True)
+        
+        result = client.publish(stateTopic, payload=msg, retain=True)
+        # result: [0, 1]
+        status = result[0]
+        if status == 0:
+            print(f"Send `{msg}` to topic `{stateTopic}`")
+        else:
+            print(f"Failed to send message to topic {stateTopic}")
+      
+
+
+if os.getenv("MQTT", 'False').lower() in ('true', '1'):
+    client = connect_mqtt()
+    client.loop_start()
+    
 # Had to split frame receive and processing into different threads due to underlying FFMPEG issue. Read more here:
 # https://stackoverflow.com/questions/49233433/opencv-read-errorh264-0x8f915e0-error-while-decoding-mb-53-20-bytestream
 # Current solution is to insert into deque on the thread receiving images, and process on the other

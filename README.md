@@ -63,3 +63,13 @@ And you'll probably get a warning about the app trying to boot on port `80`. You
 You'll need to update some paths and IPs in the code.
 <br/><br/>
 ## Someone send me proof you got it all running.
+
+<br/><br/>
+### Home automation / MQTT
+Baby Sleep Coach can also be integrated into home automations like OpenHAB, Home Assistant or ioBroker. For this purpose, there is an MQTT topic
+
+`homeassistant/binary_sensor/baby_sleep_coach/is_awake/state`
+
+which can be used to query the awake status of the baby. This can then be used, for example, to turn off the doorbell when the baby is asleep.
+
+MQTT auto discovery from OpenHAB and Home Assistant is also supported.
