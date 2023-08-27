@@ -12,3 +12,6 @@ build
 !*.ipynb
 !requirements.txt
 !.env_sample
+!.env_sample_docker
+!dockerfile
+!start_docker.sh

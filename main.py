@@ -471,7 +471,7 @@ class SleepyBaby():
                 w = 800
 
                 if img.shape[0] > 1080 and img.shape[1] > 1920: # max res 1080p
-                    img = maintain_aspect_ratio_resize(img, width=self.frame_dim[0], height=self.frame_dim[1])
+                    img = maintain_aspect_ratio_resize(self=self, image=img, width=self.frame_dim[0], height=self.frame_dim[1])
 
                 img_to_process = img[y:y+h, x:x+w]
 
@@ -545,10 +545,9 @@ _thread.start_new_thread(start_server, ())
 
 def receive(producer_q):
     print("Start receiving frames.")
-    cam_ip = os.environ['CAM_IP']
-    cam_pw = os.environ['CAM_PW']
-    connect_str = "rtsp://admin:" + cam_pw + "@" + cam_ip
-    connect_str2 = connect_str + ":554" + "//h264Preview_01_sub" # this might be different depending on camera used
+
+    cam_stream_url = os.environ['CAM_STREAM_URL']
+    connect_str = cam_stream_url
 
     os.environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'rtsp_transport;tcp' # Use tcp instead of udp if stream is unstable
     c = cv2.VideoCapture(connect_str)

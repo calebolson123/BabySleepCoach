@@ -63,3 +63,25 @@ And you'll probably get a warning about the app trying to boot on port `80`. You
 You'll need to update some paths and IPs in the code.
 <br/><br/>
 ## Someone send me proof you got it all running.
+
+<br/><br/>
+## Docker
+It is also possible to install the app into a docker container.
+Clone the repository. Navigate to the path and build the docker image.
+ ```
+docker image build -t babysleepcoach . 
+```
+Run the container (adjust the ports, URLs and path).
+
+With an environment file (for the .env file see env_sample_docker):
+```
+docker run -d -p7080:80 -p7081:8000 --env-file .env --name babysleepcoach babysleepcoach
+```
+
+Or with the parameters direct via command line:
+```
+docker run -d -p7080:80 -p7081:8000 -e REACT_APP_BACKEND_URL=URL_OF_THE_DOCKER_CONTAINER:7081 -e CAM_STREAM_URL=rtsp://user:password@URL_OF_CAMERA:554/stream1 -e DEBUG=False -e OWL=False -e HATCH_IP=127.0.0.1 -v /PATH_TO_SLEEP_LOGS_ON_HOST/sleep_logs.csv:/usr/app/babysleepcoach/sleep_logs.csv --name babysleepcoach babysleepcoach
+```
+
+The frontend can be accessed via http://URL_OF_THE_DOCKER_CONTAINER:7080 (or the port you wrote in the run command).
+
