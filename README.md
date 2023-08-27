@@ -28,12 +28,6 @@ There are two components to configure:
 1) A sleep tracking python script
 2) A web application
 
-### Warning: jank ahead
-
-I don't treat these projects as I would in industry. The result is a very monolithic and duct-tapey project.
-
-If there is a desire, I will refactor and make this more repeatable and easy to use.
-
 ### Part 1: Sleep Tracking Script
 
 Install requirements: `pip install -r requirements.txt`
