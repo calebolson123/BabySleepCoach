@@ -19,4 +19,5 @@ build
 !notifications.txt
 !user_defined_crop_area.txt
 !.dockerignore
+!blanket_model
 !blanket_model/**
