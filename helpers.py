@@ -140,7 +140,7 @@ def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER
 
     # Return original image if no need to resize
     if width is None and height is None:
-        return image
+        return image, None
 
     # We are resizing height if width is none
     if width is None:
@@ -154,7 +154,7 @@ def maintain_aspect_ratio_resize(image, width=None, height=None, inter=cv2.INTER
         dim = (width, int(h * r))
 
     # Return the resized image
-    return cv2.resize(image, dim, interpolation=inter)
+    return cv2.resize(image, dim, interpolation=inter), dim
 
 
 def gamma_correction(og, gamma):
