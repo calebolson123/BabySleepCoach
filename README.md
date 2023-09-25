@@ -14,7 +14,7 @@ This work is licensed under a
 ---
 ## [As seen on YouTube](https://www.youtube.com/channel/UCzxiOKO3vX1ER_U3Z_eY_yw)
 
-This repo contains code to run the The Baby Sleep Coach service + web application which provides sleep analysis of your baby, using only a video feed.
+This repo contains code to run the The Baby Sleep Coach. The Baby Sleep Coach provides sleep analysis of your baby, using only a video feed. You can access the sleep analysis via a locally hosted web app, which runs on launch.
 
 ## Pre-requisites
 
