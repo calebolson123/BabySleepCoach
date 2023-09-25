@@ -1,21 +1,19 @@
-#Deriving the latest base image
 FROM node:slim
 
 WORKDIR /usr/app/babysleepcoach
-
-RUN mkdir -p video
+EXPOSE 80
 
 #Copy all files in the container
 COPY . .
 
 # Install required packages
+ENV PIP_BREAK_SYSTEM_PACKAGES 1
 RUN apt-get update && apt-get install python3-pip libgl1 libglib2.0-0  -y
 RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 
-RUN cd webapp && yarn install
+RUN cd webapp && yarn install && cd ..
 
-ENV SLEEP_DATA_PATH=/usr/app/babysleepcoach
-ENV VIDEO_PATH=/usr/app/babysleepcoach/video
+WORKDIR /usr/app/babysleepcoach
 
-CMD ["./start_docker.sh"]
+ENTRYPOINT ["bash", "start_docker.sh"]

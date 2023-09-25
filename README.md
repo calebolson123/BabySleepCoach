@@ -14,68 +14,39 @@ This work is licensed under a
 ---
 ## [As seen on YouTube](https://www.youtube.com/channel/UCzxiOKO3vX1ER_U3Z_eY_yw)
 
-This repo contains code to run the AI Baby Sleep Tracking service as well as a web application which provides the user with analysis and charts based on the recorded sleep data.
+This repo contains code to run the The Baby Sleep Coach service + web application which provides sleep analysis of your baby, using only a video feed.
 
 ## Pre-requisites
 
+- Docker
 - Camera which supports RTSP
 - Compute accessible via HTTP requests (I used a Raspberry Pi, but you can use any computer)
-- Python 3.10 or lower (3.11 is not supported by MediaPipe [[see](https://github.com/google/mediapipe/issues/1325)])
 
-## Setup
+## tl;dr Run it with Docker
 
-There are two components to configure:
-1) A sleep tracking python script
-2) A web application
+Copy the .env_sample template into .env
 
-### Part 1: Sleep Tracking Script
+```cp example.env .env```
 
-Install requirements: `pip install -r requirements.txt`
+### Configure .env file:
 
-Run: `python main.py`
+`CAM_IP` IP of your camera
 
-That's it. Except this is where the fun starts. 
+`CAM_PW` pw for accessing your camera
 
-Most of the dependencies are self explanatory, the only issue I had was installing [MediaPipe](https://google.github.io/mediapipe/) on Raspbian. I believe I used https://pypi.org/project/mediapipe-rpi4/, but I ran into a number of other issues I won't document here. glhf
+`PORT` Port for accessing web app
 
-There are number of environment variables and holes you'll need to fill with info about your environment. Instead of fixing things, I left a lot of comments.
+`REACT_APP_BACKEND_IP` IP of your backend/api layer. Likely 192.168.COMPUTER_IP:8001
 
-Alternatively you can `touch .env` and then copy and paste the contents of `.env_sample` into it. Then fill in the blanks.
+`REACT_APP_RESOURCE_SERVER_IP` IP of your resource server (runs on launch) Likely 192.168.COMPUTER_IP:8000
 
-The sleep data is written to `sleep_logs.csv`. I primed this file with a few rows as an example. Feel free to remove these and start from scratch.
+`HATCH_IP` (optional) IP of your hatch for wake light
 
-### Part 2: The Web App
+`VIDEO_PATH` (optional) use to set path to recorded footage for debugging
 
-This one is more straight forward. Just make sure you have [`yarn`](https://yarnpkg.com/getting-started/install).
+### Update docker-compose
 
-Execute the following commands:
+Update the path in `docker-compose.yml` to be the root of this project on your machine.
 
-`cd webapp; yarn install; yarn start;`
-
-And you'll probably get a warning about the app trying to boot on port `80`. You can change it to whatever you want in the package.json.
-
-You'll need to update some paths and IPs in the code.
-<br/><br/>
-## Someone send me proof you got it all running.
-
-<br/><br/>
-## Docker
-It is also possible to install the app into a docker container.
-Clone the repository. Navigate to the path and build the docker image.
- ```
-docker image build -t babysleepcoach . 
-```
-Run the container (adjust the ports, URLs and path).
-
-With an environment file (for the .env file see env_sample_docker):
-```
-docker run -d -p7080:80 -p7081:8000 --env-file .env --name babysleepcoach babysleepcoach
-```
-
-Or with the parameters direct via command line:
-```
-docker run -d -p7080:80 -p7081:8000 -e REACT_APP_BACKEND_URL=URL_OF_THE_DOCKER_CONTAINER:7081 -e CAM_STREAM_URL=rtsp://user:password@URL_OF_CAMERA:554/stream1 -e DEBUG=False -e OWL=False -e HATCH_IP=127.0.0.1 -v /PATH_TO_SLEEP_LOGS_ON_HOST/sleep_logs.csv:/usr/app/babysleepcoach/sleep_logs.csv --name babysleepcoach babysleepcoach
-```
-
-The frontend can be accessed via http://URL_OF_THE_DOCKER_CONTAINER:7080 (or the port you wrote in the run command).
-
+### Run it
+`docker compose up`

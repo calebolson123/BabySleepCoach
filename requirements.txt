@@ -9,3 +9,8 @@ python-dotenv==0.21.1
 scikit_learn==1.2.1
 statsmodels==0.13.5
 tbats==1.1.2
+scikit-image==0.19.3
+#scikit-learn==1.0.2
+flask==2.3.2
+flask-cors==3.0.10
+requests==2.31.0

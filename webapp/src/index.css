@@ -5,8 +5,53 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #121212;
+  /* background-color: #000; */
   color: steelblue;
+
+  /* background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab); */
+  /* background: linear-gradient(-45deg, blue, orange); */
+  /* background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%); */
+  /* background-image: linear-gradient(to top, #30cfd0 0%, #330867 100%); */
+  /* background-image: linear-gradient(to right, #6a11cb 0%, #2575fc 100%); */
+  /* background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%), radial-gradient(at top center, rgba(255,255,255,0.40) 0%, rgba(0,0,0,0.40) 120%) #989898; */
+ 
+  /* background-image: linear-gradient(to right, #434343 0%, black 100%);
+  background-blend-mode: multiply,multiply; */
+  
+  background-image: linear-gradient(to top, #09203f 0%, #537895 100%);
+
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+
+@keyframes gradient {
+  0% {
+      background-position: 0% 50%;
+  }
+  50% {
+      background-position: 100% 50%;
+  }
+  100% {
+      background-position: 0% 50%;
+  }
+}
+
+.linear-wipe {
+  text-align: center;
+  background: linear-gradient(to right, #ffc400 20%, #ffa600 40%, #ff9900 60%, #ff6f00 80%);
+  background-size: 200% auto;
+  color: #000;
+  background-clip: text;
+  text-fill-color: transparent;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent;
+  animation: shine 1s linear infinite;
+  @keyframes shine {
+    to {
+      background-position: 200% center;
+    }
+  }
 }
 
 .display-linebreak {
@@ -25,4 +70,82 @@ svg {
 
 #coolMegaCircleChart {
   background-color: white;
+}
+
+.speedometer {
+  height: 150px !important;
+  /* width: 300px !important; */
+}
+
+.animate-character
+{
+  /* text-transform: uppercase; */
+  background-image: linear-gradient(
+    -225deg,
+    #0000ff 0%,
+    /* #e600b3 25%, */
+    /* #ff0067 50%,
+    #ff542c 75%, */
+    #ffa500 100%
+    /* #0000ff, #e600b3, #ff0067, #ff542c, #ffa500 */
+  );
+  background-size: auto auto;
+  background-clip: border-box;
+  background-size: 200% auto;
+  color: #fff;
+  background-clip: text;
+  text-fill-color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textclip 10s linear infinite;
+  display: inline-block;
+      font-size: 18px;
+}
+
+@keyframes textclip {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/** Hides the outer shapes - for this style we only need one **/
+svg.a9s-annotationlayer .a9s-selection .a9s-outer, 
+svg.a9s-annotationlayer .a9s-annotation .a9s-outer {
+  display:none;
+}
+
+svg.a9s-annotationlayer .a9s-handle .a9s-handle-outer {
+  display:none;
+}
+
+/** New style for the annotation outlines **/
+svg.a9s-annotationlayer .a9s-selection .a9s-inner,
+svg.a9s-annotationlayer .a9s-annotation .a9s-inner  {
+  stroke-width:4;
+  stroke:blue;
+  stroke-dasharray:5;
+}
+
+/** Disable the hover effect from the default stylesheet **/
+svg.a9s-annotationlayer .a9s-annotation.editable:hover .a9s-inner {
+  fill:transparent;
+}
+
+/** Corner handles **/
+svg.a9s-annotationlayer .a9s-handle .a9s-handle-inner {
+  fill:orange;
+  stroke:orange;
+}
+
+/** Enable the dim mask, black with 60% transparency **/
+svg.a9s-annotationlayer .a9s-selection-mask {
+  fill:rgba(0, 0, 0, 0.6);
+}
+
+#croppableDivId > div {
+  /* position: inherit !important; */
+  display: inherit !important;
+}
+#croppableDivId > div > img {
+  display: initial !important;
 }
