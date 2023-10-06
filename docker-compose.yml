@@ -15,4 +15,6 @@ services:
         # You need to update this to absolute path of this dir on your machine
         source: C:\Users\caleb\projects\github-sleepy-baby\BabySleepCoach\
         target: "${APP_DIR}"
-    container_name: baby-sleep-coach
+    # To use a webcam, uncomment these lines
+    # devices:
+    #   - /dev/video0
