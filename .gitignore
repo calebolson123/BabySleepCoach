@@ -13,7 +13,7 @@ build
 !requirements.txt
 !.env_sample
 !.env_sample_docker
-!dockerfile
+!Dockerfile
 !start_docker.sh
 !docker-compose.yml
 !notifications.txt
