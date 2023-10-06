@@ -26,7 +26,7 @@ This repo contains code to run the The Baby Sleep Coach. The Baby Sleep Coach pr
 
 Copy the .env_sample template into .env
 
-```cp example.env .env```
+```cp .env_sample .env```
 
 ### Configure .env file:
 
