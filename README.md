@@ -30,9 +30,7 @@ Copy the .env_sample template into .env
 
 ### Configure .env file:
 
-`CAM_IP` IP of your camera
-
-`CAM_PW` pw for accessing your camera
+`CAM_URL` URL of your camera. Likely `rtsp://admin:password@192.168.CAMERA_IP:554/h264Preview_01_sub` or `/dev/video0` for a webcam
 
 `PORT` Port for accessing web app
 
