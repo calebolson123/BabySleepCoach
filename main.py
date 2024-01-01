@@ -44,7 +44,7 @@ import datetime
 load_dotenv()
 dotenv_file = dotenv.find_dotenv()
 
-logfile = os.getenv("APP_DIR") + '/sleepy_logs.log'
+logfile = os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/sleepy_logs.log'
 logging.basicConfig(filename=logfile,
                     filemode='a+',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -64,7 +64,7 @@ body_found = False
 focus_bounding_box = (None, None, None, None)
 classifier_resolution = 256
 
-with open(os.getenv("APP_DIR") + '/user_defined_crop_area.txt', 'r', encoding="utf-8") as f:
+with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/user_defined_crop_area.txt', 'r', encoding="utf-8") as f:
     crop_area = f.read()
     focusRegionArr = crop_area.split(',')
     print('reading focusRegionArr: ', focusRegionArr)
@@ -81,7 +81,7 @@ with open(os.getenv("APP_DIR") + '/user_defined_crop_area.txt', 'r', encoding="u
 lock_model_use = False
 creepy_baby_model = None
 try:
-    with open(os.getenv("APP_DIR") + '/blanket_model/creepy_baby_model.pkl', 'rb') as f:
+    with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/creepy_baby_model.pkl', 'rb') as f:
         creepy_baby_model = pickle.load(f)
 except Exception as e:
     print("No blanket model found at startup: ", e)
@@ -273,7 +273,7 @@ class SleepyBaby():
     @debounce(180)
     def write_wakeness_event(self, wake_status, img):
         str_timestamp = str(int(time.time()))
-        sleep_data_base_path = os.getenv("APP_DIR")
+        sleep_data_base_path = os.getenv("APP_DIR", "/usr/app/babysleepcoach")
         p = sleep_data_base_path + '/' + str_timestamp + '.png'
         if wake_status: # woke up
             log_string = "1," + str_timestamp + "\n"
@@ -287,7 +287,7 @@ class SleepyBaby():
             # now = datetime.datetime.now()
             # now_time = now.time()
             # notifications_enabled = False
-            # with open(os.getenv("APP_DIR") + '/notifications.txt', 'r', encoding="utf-8") as f:
+            # with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/notifications.txt', 'r', encoding="utf-8") as f:
             #     notifications_enabled_text = f.read()
             #     notifications_enabled = notifications_enabled_text == 'true'
             # if notifications_enabled and now_time >= datetime.time(7,00) or now_time <= datetime.time(22,00): # day time
@@ -460,14 +460,14 @@ class SleepyBaby():
                 proba_string = str(y[0][0]) + ',' + str(y[0][1]) + ',' + str(time.time())
                 model_proba = proba_string
 
-                # with open(os.getenv("APP_DIR") + '/blanket_model/current_output/proba.txt', 'w', encoding="utf-8") as f:
+                # with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/current_output/proba.txt', 'w', encoding="utf-8") as f:
                 #     f.write(proba_string)
-                # cv2.imwrite(os.getenv("APP_DIR") + '/blanket_model/current_output/raw.png', image)
+                # cv2.imwrite(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/current_output/raw.png', image)
         except Exception as e:
             model_sees_baby = None
             print("Something went wrong while invoking creepy blanket model: ", e)
 
-        cv2.imwrite(os.getenv("APP_DIR") + '/blanket_model/current_output/raw_uncropped.png', raw_uncropped_image)
+        cv2.imwrite(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/current_output/raw_uncropped.png', raw_uncropped_image)
 
 
     def frame_logic(self, raw_img, raw_uncropped_image, debug_frame_q):
@@ -522,10 +522,10 @@ class SleepyBaby():
     # This basically does the same thing as the live version, but is very useful for testing
     def recorded(self, debug_frame_q, cropped_raw_frame_q):
         # cap = cv2.VideoCapture(os.getenv("VIDEO_PATH"))
-        cap = cv2.VideoCapture(os.getenv("APP_DIR") + '/videos/baby-011013-011040.mp4')
-        # cap = cv2.VideoCapture(os.getenv("APP_DIR") + '/raw_data/babywaking.mp4')
-        # cap = cv2.VideoCapture(os.getenv("APP_DIR") + '/raw_data/baby_eyes.mp4')
-        # cap = cv2.VideoCapture(os.getenv("APP_DIR") + '/raw_data/falling_asleep_eyes.mp4')
+        cap = cv2.VideoCapture(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/videos/baby-011013-011040.mp4')
+        # cap = cv2.VideoCapture(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/raw_data/babywaking.mp4')
+        # cap = cv2.VideoCapture(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/raw_data/baby_eyes.mp4')
+        # cap = cv2.VideoCapture(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/raw_data/falling_asleep_eyes.mp4')
 
         global focus_bounding_box
         global classifier_resolution
@@ -806,7 +806,7 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
     @cross_origin()
     def getSleepNotificationsEnabled():
         notifications_enabled = None
-        with open(os.getenv("APP_DIR") + '/notifications.txt', 'r', encoding="utf-8") as f:
+        with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/notifications.txt', 'r', encoding="utf-8") as f:
             notifications_enabled = f.read()
         return notifications_enabled
 
@@ -814,7 +814,7 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
     @cross_origin()
     def setSleepNotificationsEnabled(enabled):
         print('enabled? ', enabled)
-        with open(os.getenv("APP_DIR") + '/notifications.txt', 'w', encoding="utf-8") as f:
+        with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/notifications.txt', 'w', encoding="utf-8") as f:
             f.write(enabled)
         return 'ok'
 
@@ -858,12 +858,12 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
 
         if focusRegion == 'reset':
             print("RESET")
-            with open(os.getenv("APP_DIR") + '/user_defined_crop_area.txt', 'w', encoding="utf-8") as f:
+            with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/user_defined_crop_area.txt', 'w', encoding="utf-8") as f:
                 f.write(',,,')
             focus_bounding_box = (None, None, None, None)
             return 'reset ok'
 
-        with open(os.getenv("APP_DIR") + '/user_defined_crop_area.txt', 'w', encoding="utf-8") as f:
+        with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/user_defined_crop_area.txt', 'w', encoding="utf-8") as f:
             f.write(focusRegion)
 
         print('focusRegion: ', focusRegion)
@@ -887,7 +887,7 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
         master_image_data_dict = {"baby": [], "no_baby": []}
         # large retrain w/ all the raw images, using newly set bounds
         # so user doesnt have to restart/recollect from scratch, if updating
-        input_location = os.getenv("APP_DIR") + '/blanket_model/input'
+        input_location = os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/input'
         input_paths = os.listdir(input_location)
         for path in input_paths:
             all_inputs = os.listdir(f"{input_location}/{path}")
@@ -907,7 +907,7 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
                 master_image_data_dict[path].append(cropped_resized_blurred_image_data.flatten().tolist())
                 cv2.imwrite(f'./tmp/{input}', cropped_resized_blurred_image_data)
 
-        with open(os.getenv("APP_DIR") + "/blanket_model/output/image_data.json", "w") as f:
+        with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + "/blanket_model/output/image_data.json", "w") as f:
             json.dump(master_image_data_dict, f)
 
         # flatten image data for storage
@@ -919,10 +919,10 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
         final_clf = svm.SVC(probability=True, C=0.1, gamma=0.0001, kernel='poly')
         final_clf.fit(all_images_flat, all_labels)
 
-        with open(os.getenv("APP_DIR") + '/blanket_model/creepy_baby_model.pkl','wb') as f:
+        with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/creepy_baby_model.pkl','wb') as f:
             pickle.dump(final_clf,f)
 
-        with open(os.getenv("APP_DIR") + '/blanket_model/creepy_baby_model.pkl', 'rb') as f:
+        with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/creepy_baby_model.pkl', 'rb') as f:
             creepy_baby_model = pickle.load(f)
 
         lock_model_use = False
@@ -941,9 +941,9 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
             global classifier_resolution
             print("\n\n" + classification + "\n\n")
 
-            new_input_location = os.getenv("APP_DIR") + '/blanket_model/input/' + classification + '/' + classification + '_' + str(int(time.time())) + '.png'
+            new_input_location = os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/input/' + classification + '/' + classification + '_' + str(int(time.time())) + '.png'
             # move image indicated by user from current_output dir to input dir
-            shutil.move(os.getenv("APP_DIR") + "/blanket_model/current_output/raw_uncropped.png", new_input_location)
+            shutil.move(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + "/blanket_model/current_output/raw_uncropped.png", new_input_location)
 
             # read it, move to np
             image = Image.open(new_input_location)
@@ -951,7 +951,7 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
 
             # open & insert into image_data.json, save it off
             all_images_dict = {}
-            with open(os.getenv("APP_DIR") + '/blanket_model/output/image_data.json', "r") as f:
+            with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/output/image_data.json', "r") as f:
                 all_images_dict = json.load(f)
 
             cropped_image_data = image_data[focus_bounding_box[1]:focus_bounding_box[1]+focus_bounding_box[3], focus_bounding_box[0]:focus_bounding_box[0]+focus_bounding_box[2]]
@@ -959,7 +959,7 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
             cropped_resized_blurred_image_data = cv2.GaussianBlur(cropped_resized_image_data,(3,3),0)
 
             all_images_dict[classification].append(cropped_resized_blurred_image_data.flatten().tolist())
-            with open(os.getenv("APP_DIR") + "/blanket_model/output/image_data.json", "w") as f:
+            with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + "/blanket_model/output/image_data.json", "w") as f:
                 json.dump(all_images_dict, f)
 
             # flatten all_fds
@@ -971,10 +971,10 @@ def server(creepy_baby_model, frame_q, debug_frame_q, cropped_raw_frame_q, sleep
             # final_clf = svm.SVC(probability=True, C=1.0, gamma='auto', kernel='rbf')
             final_clf.fit(all_images_flat, all_labels)
 
-            with open(os.getenv("APP_DIR") + '/blanket_model/creepy_baby_model.pkl','wb') as f:
+            with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/creepy_baby_model.pkl','wb') as f:
                 pickle.dump(final_clf,f)
 
-            with open(os.getenv("APP_DIR") + '/blanket_model/creepy_baby_model.pkl', 'rb') as f:
+            with open(os.getenv("APP_DIR", "/usr/app/babysleepcoach") + '/blanket_model/creepy_baby_model.pkl', 'rb') as f:
                 creepy_baby_model = pickle.load(f)
 
         except Exception as e:
