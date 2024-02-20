@@ -1,4 +1,4 @@
-mediapipe==0.9.1.0
+mediapipe==0.10.3
 pyhatchbabyrest==2.1.0
 pyserial==3.5
 matplotlib==3.7.0
