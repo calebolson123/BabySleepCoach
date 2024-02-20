@@ -11,10 +11,8 @@ services:
     env_file:
       - .env
     volumes:
-      - type: bind
-        # You need to update this to absolute path of this dir on your machine
-        source: C:\Users\caleb\projects\github-sleepy-baby\BabySleepCoach\
-        target: "${APP_DIR}"
+      - .:/usr/app/babysleepcoach
+      - /usr/app/babysleepcoach/webapp/node_modules
     # To use a webcam, uncomment these lines
     # devices:
     #   - /dev/video0
