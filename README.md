@@ -42,9 +42,5 @@ Copy the .env_sample template into .env
 
 `VIDEO_PATH` (optional) use to set path to recorded footage for debugging
 
-### Update docker-compose
-
-Update the path in `docker-compose.yml` to be the root of this project on your machine.
-
 ### Run it
 `docker compose up`
