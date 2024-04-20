@@ -19,8 +19,8 @@ This repo contains code to run the The Baby Sleep Coach. The Baby Sleep Coach pr
 ## Pre-requisites
 
 - Docker
-- Camera which supports RTSP
-- Compute accessible via HTTP requests (I used a Raspberry Pi, but you can use any computer)
+- USB webcam or camera which supports RTSP
+- Computer accessible via HTTP requests (I used a Raspberry Pi, but you can use any computer)
 
 ## tl;dr Run it with Docker
 
