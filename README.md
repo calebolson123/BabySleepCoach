@@ -34,13 +34,17 @@ Copy the .env_sample template into .env
 
 `PORT` Port for accessing web app
 
-`REACT_APP_BACKEND_IP` IP of your backend/api layer. Likely 192.168.COMPUTER_IP:8001
+`REACT_APP_BACKEND_IP` IP of backend/api layer. Likely 192.168.COMPUTER_IP:8001
 
-`REACT_APP_RESOURCE_SERVER_IP` IP of your resource server (runs on launch) Likely 192.168.COMPUTER_IP:8000
+`REACT_APP_RESOURCE_SERVER_IP` IP of resource server (runs on launch) Likely 192.168.COMPUTER_IP:8000
 
 `HATCH_IP` (optional) IP of your hatch for wake light
 
 `VIDEO_PATH` (optional) use to set path to recorded footage for debugging
+
+*Remarks:* 
+- instead of `192.168.COMPUTER_IP` you can use `raspberrypi.local` (or whatever name you gave when setting up your Raspberry Pi)
+- when using `/dev/video0` (for USB webcam), also uncomment corresponding lines in `docker-compose.yml`
 
 ### Run it
 `docker compose up`
